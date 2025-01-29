@@ -2,8 +2,13 @@
 session_start();
 
 // Hardcoded admin credentials for demonstration purposes
-$admin_username = 'admin';
-$admin_password = '123tej';
+$admin_username = 'squid';
+$admin_password = 'Sigma2k25';
+
+// Store the original URL with parameters if it exists
+if (!empty($_SERVER['QUERY_STRING'])) {
+    $_SESSION['redirect_url'] = 'index.php?' . $_SERVER['QUERY_STRING'];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
@@ -13,7 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Set session variables
         $_SESSION['admin_id'] = 1; // Assuming admin ID is 1
         $_SESSION['admin_username'] = $admin_username;
-        header("Location: index.php");
+        
+        // Redirect to stored URL if exists, otherwise to index.php
+        if (isset($_SESSION['redirect_url'])) {
+            $redirect = $_SESSION['redirect_url'];
+            unset($_SESSION['redirect_url']); // Clean up
+            header("Location: " . $redirect);
+        } else {
+            header("Location: index.php");
+        }
         exit();
     } else {
         $error = "Invalid username or password.";

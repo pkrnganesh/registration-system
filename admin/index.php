@@ -3,6 +3,8 @@ session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['admin_id'])) {
+    // Store the complete URL with parameters for redirect after login
+    $_SESSION['redirect_url'] = 'index.php?' . $_SERVER['QUERY_STRING'];
     header("Location: login.php");
     exit();
 }
