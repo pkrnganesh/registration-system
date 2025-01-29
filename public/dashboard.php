@@ -138,6 +138,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #4CAF50;
             font-weight: bold;
         }
+        .qr-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #qrCodeImage {
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +164,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p><strong>Credits:</strong> <?php echo htmlspecialchars($user_data['credits']); ?></p>
     <p><strong>Events Played:</strong> <?php echo htmlspecialchars($user_data['eventsPlayed']); ?></p>
     <p><strong>Unique ID:</strong> <?php echo htmlspecialchars($user_data['uniqueId']); ?></p>
+
+    <!-- QR Code Section -->
+    <div class="qr-container">
+        <h2>Your Check-In QR Code</h2>
+        <img id="qrCodeImage" src="" alt="QR Code">
+    </div>
 
     <!-- Events Registration Table -->
     <h2>Available Events</h2>
@@ -201,7 +218,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div id="popup" class="popup error show"><?php echo $error; ?></div>
     <?php endif; ?>
 
+    <!-- Include QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
     <script>
+        // Generate QR Code for the user's unique ID
+        const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
+        const playerDashboardUrl = `https://yourwebsite.com/players-dashboard/${uniqueId}`;
+
+        QRCode.toDataURL(playerDashboardUrl, { errorCorrectionLevel: "H" }, (err, url) => {
+            if (err) {
+                console.error("Error generating QR code:", err);
+                return;
+            }
+            // Set the generated QR code as the image source
+            document.getElementById("qrCodeImage").src = url;
+        });
+
+        // Hide popup after 3 seconds
         window.onload = function() {
             const popup = document.getElementById('popup');
             if (popup) {
