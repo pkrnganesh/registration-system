@@ -39,56 +39,172 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+
         .popup {
             visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
+            width: 100%;
+            max-width: 400px;
             background-color: #333;
             color: #fff;
             text-align: center;
-            border-radius: 5px;
+            border-radius: 8px;
             padding: 16px;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
+            top: 20px;
             left: 50%;
-            bottom: 30px;
-            font-size: 17px;
+            transform: translateX(-50%);
+            font-size: 16px;
             opacity: 0;
-            transition: opacity 0.5s, bottom 0.5s;
+            transition: opacity 0.3s, transform 0.3s;
         }
+
         .popup.show {
             visibility: visible;
             opacity: 1;
-            bottom: 50px;
+            transform: translateX(-50%) translateY(0);
         }
+
         .popup.success {
-            background-color: green;
+            background-color: #28a745;
         }
+
         .popup.error {
-            background-color: red;
+            background-color: #cc0000;
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+            text-align: center;
+            margin-top: 60px; /* Added space for error message */
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .logo span {
+            color: #cc0000;
+        }
+
+        .welcome-text {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #cc0000;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #aa0000;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            input, button {
+                font-size: 14px;
+            }
+
+            .popup {
+                width: calc(100% - 40px);
+            }
         }
     </style>
 </head>
 
 <body>
-    <h2>Login</h2>
-
-    <?php if (isset($_SESSION['registration_success'])): ?>
-        <div id="popup" class="popup success show"><?php echo $_SESSION['registration_success']; ?></div>
-        <?php unset($_SESSION['registration_success']); ?>
-    <?php endif; ?>
-
     <div id="popup" class="popup"></div>
 
-    <form id="loginForm">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+    <div class="container">
+        <div class="logo-container">
+            <div class="logo">SIGMA<span>2K25</span></div>
+        </div>
 
-        <label for="regNo">Registration Number:</label>
-        <input type="text" id="regNo" name="regNo" required>
+        <div class="welcome-text">WELCOME TO THE SIGMA FEST</div>
 
-        <button type="submit">Login</button>
-    </form>
+        <?php if (isset($_SESSION['registration_success'])): ?>
+            <div id="success-popup" class="popup success show"><?php echo $_SESSION['registration_success']; ?></div>
+            <?php unset($_SESSION['registration_success']); ?>
+        <?php endif; ?>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <input type="email" id="email" name="email" placeholder="Email" required>
+            </div>
+
+            <div class="form-group">
+                <input type="text" id="regNo" name="regNo" placeholder="Registration number" required>
+            </div>
+
+            <button type="submit">Login</button>
+        </form>
+    </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(event) {
