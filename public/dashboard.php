@@ -256,45 +256,47 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
 
         // Function to fetch user data and update the page
         function fetchUserData() {
-            fetch('fetch_user_data.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('userName').textContent = data.user_data.name;
-                        document.getElementById('userEmail').textContent = data.user_data.email;
-                        document.getElementById('userRegNo').textContent = data.user_data.regNo;
-                        document.getElementById('userBranch').textContent = data.user_data.branch;
-                        document.getElementById('userYear').textContent = data.user_data.year;
-                        document.getElementById('userCredits').textContent = data.user_data.credits;
-                        document.getElementById('userEventsPlayed').textContent = data.user_data.eventsPlayed;
-                        document.getElementById('userUniqueId').textContent = data.user_data.uniqueId;
+    fetch('fetch_user_data.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update all user data fields
+                document.getElementById('userName').textContent = data.user_data.name;
+                document.getElementById('userEmail').textContent = data.user_data.email;
+                document.getElementById('userRegNo').textContent = data.user_data.regNo;
+                document.getElementById('userBranch').textContent = data.user_data.branch;
+                document.getElementById('userYear').textContent = data.user_data.year;
+                document.getElementById('userCredits').textContent = data.user_data.credits;
+                document.getElementById('userEventsPlayed').textContent = data.user_data.eventsPlayed;
+                document.getElementById('userUniqueId').textContent = data.user_data.uniqueId;
 
-                        // Update events table
-                        const eventsTableBody = document.getElementById('eventsTableBody');
-                        eventsTableBody.innerHTML = '';
-                        data.events.forEach(event => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${event.eventName}</td>
-                                <td>${event.description}</td>
-                                <td>${event.credits}</td>
-                                <td>${event.status}</td>
-                                <td>
-                                    <form method="POST" action="" style="display: inline;">
-                                        <input type="hidden" name="eventName" value="${event.eventName}">
-                                        <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
-                                            ${event.buttonText}
-                                        </button>
-                                    </form>
-                                </td>
-                            `;
-                            eventsTableBody.appendChild(row);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error fetching user data:', error));
-        }
-
+                // Update events table
+                const eventsTableBody = document.getElementById('eventsTableBody');
+                if (eventsTableBody) {
+                    eventsTableBody.innerHTML = '';
+                    data.events.forEach(event => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${event.eventName}</td>
+                            <td>${event.description}</td>
+                            <td>${event.credits}</td>
+                            <td>${event.status}</td>
+                            <td>
+                                <form method="POST" action="" style="display: inline;">
+                                    <input type="hidden" name="eventName" value="${event.eventName}">
+                                    <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
+                                        ${event.buttonText}
+                                    </button>
+                                </form>
+                            </td>
+                        `;
+                        eventsTableBody.appendChild(row);
+                    });
+                }
+            }
+        })
+        .catch(error => console.error('Error fetching user data:', error));
+}
         // Fetch user data every 5 seconds
         setInterval(fetchUserData, 5000);
     </script>
