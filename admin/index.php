@@ -67,11 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
 
             if ($updateCredits->execute()) {
                 $_SESSION['success_message'] = "Successfully added {$additionalCredits} credits!";
-                
+
                 if (isset($_SESSION['user_data']) && $_SESSION['user_data']['regNo'] == $playerId) {
                     $_SESSION['user_data']['credits'] += $additionalCredits;
                 }
-                
+
                 header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
                 exit();
             } else {
@@ -126,10 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
 
                 $conn->commit();
                 $_SESSION['success_message'] = "Event replayed successfully! Credits deducted.";
-                
+
                 header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
                 exit();
-
             } catch (Exception $e) {
                 $conn->rollback();
                 $_SESSION['error_message'] = "Error replaying event: " . $e->getMessage();
@@ -149,47 +148,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
 }
 
 // Modify the mark as played handling:
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
-    $eventId = $_POST['eventId'];
-    $playerId = $playerDetails['regNo'];
-
-    $conn->begin_transaction();
-
-    try {
-        $checkStmt = $conn->prepare("SELECT played, ever_played FROM events WHERE id = ? AND playerRegno = ?");
-        $checkStmt->bind_param("is", $eventId, $playerId);
-        $checkStmt->execute();
-        $eventResult = $checkStmt->get_result();
-        $eventData = $eventResult->fetch_assoc();
-        $checkStmt->close();
-
-        $updateEvent = $conn->prepare("UPDATE events SET played = 1, ever_played = 1 WHERE id = ? AND playerRegno = ?");
-        $updateEvent->bind_param("is", $eventId, $playerId);
-        $updateEvent->execute();
-
-        if (!$eventData['ever_played']) {
-            $updatePlayer = $conn->prepare("UPDATE players SET eventsPlayed = eventsPlayed + 1 WHERE regNo = ?");
-            $updatePlayer->bind_param("s", $playerId);
-            $updatePlayer->execute();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
+        $eventId = $_POST['eventId'];
+        $playerId = $playerDetails['regNo'];
+    
+        $conn->begin_transaction();
+    
+        try {
+            // Check if this event was ever played before
+            $checkStmt = $conn->prepare("SELECT played, ever_played, play_count FROM events WHERE id = ? AND playerRegno = ?");
+            $checkStmt->bind_param("is", $eventId, $playerId);
+            $checkStmt->execute();
+            $eventResult = $checkStmt->get_result();
+            $eventData = $eventResult->fetch_assoc();
+            $checkStmt->close();
+    
+            // Update event's played status and increment play count
+            $updateEvent = $conn->prepare("UPDATE events SET played = 1, ever_played = 1, play_count = play_count + 1 WHERE id = ? AND playerRegno = ?");
+            $updateEvent->bind_param("is", $eventId, $playerId);
+            $updateEvent->execute();
+    
+            // Only increment eventsPlayed if this event was never played before
+            if (!$eventData['ever_played']) {
+                $updatePlayer = $conn->prepare("UPDATE players SET eventsPlayed = eventsPlayed + 1 WHERE regNo = ?");
+                $updatePlayer->bind_param("s", $playerId);
+                $updatePlayer->execute();
+            }
+    
+            $conn->commit();
+            $_SESSION['success_message'] = "Event marked as played successfully!";
+            
+            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+            exit();
+    
+        } catch (Exception $e) {
+            $conn->rollback();
+            $_SESSION['error_message'] = "Error updating event status: " . $e->getMessage();
+            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+            exit();
         }
-
-        $conn->commit();
-        $_SESSION['success_message'] = "Event marked as played successfully!";
-        
-        header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
-        exit();
-
-    } catch (Exception $e) {
-        $conn->rollback();
-        $_SESSION['error_message'] = "Error updating event status: " . $e->getMessage();
-        header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
-        exit();
     }
-}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -209,6 +212,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+        }
+
+        .player-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .player-info table td {
+            padding: 8px;
+            border: 1px solid #ddd;
         }
 
         /* Styles for the credit management form */
@@ -255,7 +268,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .events-table th, .events-table td {
+        .events-table th,
+        .events-table td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
@@ -334,8 +348,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
         .popup.error {
             background-color: red;
         }
+
+        /* Media queries for mobile view */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 10px;
+            }
+
+            .player-info table td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .player-info table td:nth-child(odd) {
+                background-color: #e0e0e0;
+            }
+
+            .credit-form input[type="number"],
+            .credit-form button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .events-table th,
+            .events-table td {
+                padding: 10px;
+                font-size: 0.9em;
+            }
+
+            .action-button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="dashboard-container">
         <h1>Admin Dashboard</h1>
@@ -347,24 +396,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
                     <tr>
                         <td><strong>Name:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['name']); ?></td>
+                    </tr>
+                    <tr>
                         <td><strong>Email:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['email']); ?></td>
                     </tr>
                     <tr>
                         <td><strong>Registration Number:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['regNo']); ?></td>
+                    </tr>
+                    <tr>
                         <td><strong>Branch:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['branch']); ?></td>
                     </tr>
                     <tr>
                         <td><strong>Year:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['year']); ?></td>
+                    </tr>
+                    <tr>
                         <td><strong>Credits:</strong></td>
                         <td class="current-credits"><?php echo htmlspecialchars($playerDetails['credits']); ?></td>
                     </tr>
                     <tr>
                         <td><strong>Events Played:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['eventsPlayed']); ?></td>
+                    </tr>
+                    <tr>
                         <td><strong>Unique ID:</strong></td>
                         <td><?php echo htmlspecialchars($playerDetails['uniqueId']); ?></td>
                     </tr>
@@ -376,10 +433,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
                 <h3>Add Credits</h3>
                 <form method="POST" action="">
                     <input type="number"
-                           name="additionalCredits"
-                           placeholder="Enter credits"
-                           min="1"
-                           required>
+                        name="additionalCredits"
+                        placeholder="Enter credits"
+                        min="1"
+                        required>
                     <button type="submit" name="addCredits">Add Credits</button>
                 </form>
             </div>
@@ -394,6 +451,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
                             <th>Credits</th>
                             <th>Score</th>
                             <th>Status</th>
+                            <th>Times Played</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -409,6 +467,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
                                         <?php echo $event['played'] ? 'Played' : 'Not Played'; ?>
                                     </span>
                                 </td>
+                                <td><?php echo htmlspecialchars($event['play_count']); ?></td>
                                 <td>
                                     <?php if ($event['played']): ?>
                                         <form method="POST" action="" style="display: inline;">
@@ -453,4 +512,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
         };
     </script>
 </body>
+
 </html>
