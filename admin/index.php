@@ -3,7 +3,6 @@ session_start();
 include '../includes/db.php';
 
 if (!isset($_SESSION['admin_id'])) {
-    // Store the complete URL with parameters for redirect after login
     $_SESSION['redirect_url'] = 'index.php?' . $_SERVER['QUERY_STRING'];
     header("Location: login.php");
     exit();
@@ -14,13 +13,11 @@ $success = '';
 $playerDetails = [];
 $registeredEvents = [];
 
-// Get uniqueId from URL
 if (isset($_GET)) {
     $keys = array_keys($_GET);
     $uniqueId = isset($keys[0]) ? $keys[0] : null;
 
     if ($uniqueId) {
-        // Fetch player details
         $stmt = $conn->prepare("SELECT * FROM players WHERE uniqueId = ?");
         $stmt->bind_param("s", $uniqueId);
         $stmt->execute();
@@ -29,7 +26,6 @@ if (isset($_GET)) {
         if ($result->num_rows > 0) {
             $playerDetails = $result->fetch_assoc();
 
-            // Fetch registered events
             $eventStmt = $conn->prepare("SELECT * FROM events WHERE playerRegno = ?");
             $eventStmt->bind_param("s", $playerDetails['regNo']);
             $eventStmt->execute();
@@ -44,7 +40,6 @@ if (isset($_GET)) {
     }
 }
 
-// Handle adding credits
 if (isset($_SESSION['success_message'])) {
     $success = $_SESSION['success_message'];
     unset($_SESSION['success_message']);
@@ -55,7 +50,6 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
-// Modify the addCredits handling:
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
     $additionalCredits = intval($_POST['additionalCredits']);
     $playerId = $playerDetails['regNo'];
@@ -92,12 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
     }
 }
 
-// Modify the replay event handling:
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
     $eventId = $_POST['replayEventId'];
     $playerId = $playerDetails['regNo'];
 
-    // Fetch event details to get credits
     $eventStmt = $conn->prepare("SELECT credits FROM events WHERE id = ? AND playerRegno = ?");
     $eventStmt->bind_param("is", $eventId, $playerId);
     $eventStmt->execute();
@@ -147,47 +139,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
     }
 }
 
-// Modify the mark as played handling:
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
-        $eventId = $_POST['eventId'];
-        $playerId = $playerDetails['regNo'];
-    
-        $conn->begin_transaction();
-    
-        try {
-            // Check if this event was ever played before
-            $checkStmt = $conn->prepare("SELECT played, ever_played, play_count FROM events WHERE id = ? AND playerRegno = ?");
-            $checkStmt->bind_param("is", $eventId, $playerId);
-            $checkStmt->execute();
-            $eventResult = $checkStmt->get_result();
-            $eventData = $eventResult->fetch_assoc();
-            $checkStmt->close();
-    
-            // Update event's played status and increment play count
-            $updateEvent = $conn->prepare("UPDATE events SET played = 1, ever_played = 1, play_count = play_count + 1 WHERE id = ? AND playerRegno = ?");
-            $updateEvent->bind_param("is", $eventId, $playerId);
-            $updateEvent->execute();
-    
-            // Only increment eventsPlayed if this event was never played before
-            if (!$eventData['ever_played']) {
-                $updatePlayer = $conn->prepare("UPDATE players SET eventsPlayed = eventsPlayed + 1 WHERE regNo = ?");
-                $updatePlayer->bind_param("s", $playerId);
-                $updatePlayer->execute();
-            }
-    
-            $conn->commit();
-            $_SESSION['success_message'] = "Event marked as played successfully!";
-            
-            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
-            exit();
-    
-        } catch (Exception $e) {
-            $conn->rollback();
-            $_SESSION['error_message'] = "Error updating event status: " . $e->getMessage();
-            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
-            exit();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
+    $eventId = $_POST['eventId'];
+    $playerId = $playerDetails['regNo'];
+
+    $conn->begin_transaction();
+
+    try {
+        $checkStmt = $conn->prepare("SELECT played, ever_played, play_count FROM events WHERE id = ? AND playerRegno = ?");
+        $checkStmt->bind_param("is", $eventId, $playerId);
+        $checkStmt->execute();
+        $eventResult = $checkStmt->get_result();
+        $eventData = $eventResult->fetch_assoc();
+        $checkStmt->close();
+
+        $updateEvent = $conn->prepare("UPDATE events SET played = 1, ever_played = 1, play_count = play_count + 1 WHERE id = ? AND playerRegno = ?");
+        $updateEvent->bind_param("is", $eventId, $playerId);
+        $updateEvent->execute();
+
+        if (!$eventData['ever_played']) {
+            $updatePlayer = $conn->prepare("UPDATE players SET eventsPlayed = eventsPlayed + 1 WHERE regNo = ?");
+            $updatePlayer->bind_param("s", $playerId);
+            $updatePlayer->execute();
         }
+
+        $conn->commit();
+        $_SESSION['success_message'] = "Event marked as played successfully!";
+
+        header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+        exit();
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        $_SESSION['error_message'] = "Error updating event status: " . $e->getMessage();
+        header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+        exit();
     }
+}
 ?>
 
 <!DOCTYPE html>
@@ -199,46 +187,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="../assets/css/styles.css">
     <style>
-        /* General styles for the dashboard container */
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
         .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Styles for the player information section */
-        .player-info {
-            background-color: #f5f5f5;
+            max-width: 400px;
+            margin: 20px auto;
             padding: 20px;
             border-radius: 8px;
+            background-color: #1e1e1e;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
             margin-bottom: 20px;
         }
 
-        .player-info table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .player-info table td {
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-
-        /* Styles for the credit management form */
-        .credit-form {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
+        .player-info, .credit-form, .events-table {
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-info p, .credit-form p {
+            margin: 5px 0;
+        }
+
+        .player-info p strong {
+            font-weight: bold;
         }
 
         .credit-form input[type="number"] {
+            width: calc(100% - 22px);
             padding: 8px;
             margin-right: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            width: 150px;
+            background-color: #333;
+            color: #fff;
         }
 
         .credit-form button {
@@ -254,49 +244,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
             background-color: #45a049;
         }
 
-        .current-credits {
-            font-size: 1.2em;
-            color: #2196F3;
-            font-weight: bold;
-        }
-
-        /* Styles for the events table */
         .events-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .events-table th,
-        .events-table td {
+        .events-table th, .events-table td {
             border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
+            padding: 10px;
+            text-align: center;
         }
 
         .events-table th {
-            background-color: #f4f4f4;
+            background-color: #333;
         }
 
-        /* Status badge styles */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        .status-played {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .status-not-played {
-            background-color: #f44336;
-            color: white;
-        }
-
-        /* Action button styles */
         .action-button {
             padding: 6px 12px;
             background-color: #2196F3;
@@ -316,7 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
             cursor: not-allowed;
         }
 
-        /* Popup styles */
         .popup {
             visibility: hidden;
             min-width: 250px;
@@ -348,40 +309,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
         .popup.error {
             background-color: red;
         }
-
-        /* Media queries for mobile view */
-        @media (max-width: 768px) {
-            .dashboard-container {
-                padding: 10px;
-            }
-
-            .player-info table td {
-                display: block;
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .player-info table td:nth-child(odd) {
-                background-color: #e0e0e0;
-            }
-
-            .credit-form input[type="number"],
-            .credit-form button {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-
-            .events-table th,
-            .events-table td {
-                padding: 10px;
-                font-size: 0.9em;
-            }
-
-            .action-button {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-        }
     </style>
 </head>
 
@@ -392,51 +319,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
         <?php if (!empty($playerDetails)): ?>
             <div class="player-info">
                 <h2>Player Details</h2>
-                <table>
-                    <tr>
-                        <td><strong>Name:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['name']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Email:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['email']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Registration Number:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['regNo']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Branch:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['branch']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Year:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['year']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Credits:</strong></td>
-                        <td class="current-credits"><?php echo htmlspecialchars($playerDetails['credits']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Events Played:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['eventsPlayed']); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Unique ID:</strong></td>
-                        <td><?php echo htmlspecialchars($playerDetails['uniqueId']); ?></td>
-                    </tr>
-                </table>
+                <p><strong>Name:</strong> <?php echo htmlspecialchars($playerDetails['name']); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($playerDetails['email']); ?></p>
+                <p><strong>Branch:</strong> <?php echo htmlspecialchars($playerDetails['branch']); ?></p>
+                <p><strong>Unique ID:</strong> <?php echo htmlspecialchars($playerDetails['uniqueId']); ?></p>
+                <p><strong>Credits:</strong> <?php echo htmlspecialchars($playerDetails['credits']); ?></p>
+                <p><strong>Register Number:</strong> <?php echo htmlspecialchars($playerDetails['regNo']); ?></p>
             </div>
 
-            <!-- Credit Management Form -->
             <div class="credit-form">
                 <h3>Add Credits</h3>
                 <form method="POST" action="">
-                    <input type="number"
-                        name="additionalCredits"
-                        placeholder="Enter credits"
-                        min="1"
-                        required>
+                    <input type="number" name="additionalCredits" placeholder="Enter credits" min="1" required>
                     <button type="submit" name="addCredits">Add Credits</button>
                 </form>
             </div>
@@ -446,33 +340,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['replayEventId'])) {
                 <table class="events-table">
                     <thead>
                         <tr>
-                            <th>Event ID</th>
-                            <th>Event Name</th>
+                            <th>Event name</th>
                             <th>Credits</th>
-                            <th>Score</th>
                             <th>Status</th>
-                            <th>Times Played</th>
+                            <th>Times played</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($registeredEvents as $event): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($event['id']); ?></td>
                                 <td><?php echo htmlspecialchars($event['eventName']); ?></td>
                                 <td><?php echo htmlspecialchars($event['credits']); ?></td>
-                                <td><?php echo htmlspecialchars($event['score']); ?></td>
-                                <td>
-                                    <span class="status-badge <?php echo $event['played'] ? 'status-played' : 'status-not-played'; ?>">
-                                        <?php echo $event['played'] ? 'Played' : 'Not Played'; ?>
-                                    </span>
-                                </td>
+                                <td><?php echo $event['played'] ? 'Played' : 'Not Played'; ?></td>
                                 <td><?php echo htmlspecialchars($event['play_count']); ?></td>
                                 <td>
                                     <?php if ($event['played']): ?>
                                         <form method="POST" action="" style="display: inline;">
                                             <input type="hidden" name="replayEventId" value="<?php echo $event['id']; ?>">
-                                            <button type="submit" class="action-button">Replay</button>
+                                            <button type="submit" class="action-button">Reply</button>
                                         </form>
                                     <?php else: ?>
                                         <form method="POST" action="" style="display: inline;">
