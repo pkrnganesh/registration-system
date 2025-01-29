@@ -12,11 +12,9 @@ $user_data = $_SESSION['user_data'];
 $error = '';
 $success = '';
 
-// Get user's registered events
 $regNo = $user_data['regNo'];
 $registeredEvents = getRegisteredEvents($conn, $regNo);
 
-// Define events and their details
 $events = [
     'Free Fire' => ['credits' => 100, 'description' => 'Battle Royale Game'],
     'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge']
@@ -26,28 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $eventName = $_POST['eventName'];
     $credits = $user_data['credits'];
 
-    // Check if already registered
     if (in_array($eventName, $registeredEvents)) {
         $error = "You are already registered for $eventName!";
-    }
-    // Check if enough credits
-    else if ($credits >= $events[$eventName]['credits']) {
-        // Deduct credits from the player
+    } else if ($credits >= $events[$eventName]['credits']) {
         $newCredits = $credits - $events[$eventName]['credits'];
         updatePlayerCredits($conn, $regNo, $newCredits);
 
-        // Set default values
         $eventCreditsValue = $events[$eventName]['credits'];
         $score = 0;
-        $played = 0; // Set played to 0
+        $played = 0;
 
-        // Insert the event registration
         if (registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score, $played)) {
             $success = "Successfully registered for $eventName!";
-            // Update session data
             $user_data['credits'] = $newCredits;
             $_SESSION['user_data'] = $user_data;
-            // Add to registered events array
             $registeredEvents[] = $eventName;
         } else {
             $error = "Error registering for the event.";
@@ -89,8 +79,93 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fest Registration</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        .user-info {
+            margin-bottom: 20px;
+        }
+        .user-info p {
+            margin: 5px 0;
+        }
+        .credit-circle {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+        }
+        .credit-circle .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150px;
+            height: 150px;
+            margin-top: -75px;
+            margin-left: -75px;
+            border-radius: 50%;
+            border: 10px solid #fff;
+            box-sizing: border-box;
+        }
+        .credit-circle .number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #fff;
+        }
+        .qr-container {
+            margin-bottom: 20px;
+        }
+        .qr-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .events-table th, .events-table td {
+            border: 1px solid #fff;
+            padding: 10px;
+            text-align: center;
+        }
+        .events-table th {
+            background-color: #333;
+        }
+        .btn-register {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-register:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status-registered {
+            color: #4CAF50;
+            font-weight: bold;
+        }
         .popup {
             visibility: hidden;
             min-width: 250px;
@@ -119,119 +194,87 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
         .popup.error {
             background-color: red;
         }
-        .events-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .events-table th, .events-table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        .events-table th {
-            background-color: #f4f4f4;
-        }
-        .btn-register {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-register:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .status-registered {
-            color: #4CAF50;
-            font-weight: bold;
-        }
-        .qr-container {
-            margin-top: 20px;
-            text-align: center;
-        }
-        #qrCodeImage {
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            background: #f9f9f9;
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+            }
+            .credit-circle {
+                width: 100px;
+                height: 100px;
+            }
+            .credit-circle .circle {
+                width: 100px;
+                height: 100px;
+                margin-top: -50px;
+                margin-left: -50px;
+            }
+            .credit-circle .number {
+                font-size: 32px;
+            }
+            .events-table th, .events-table td {
+                padding: 8px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to the Fest</h1>
-
-    <!-- User Information Section -->
-    <h2>User Information</h2>
-    <p><strong>Name:</strong> <span id="userName"><?php echo htmlspecialchars($user_data['name']); ?></span></p>
-    <p><strong>Email:</strong> <span id="userEmail"><?php echo htmlspecialchars($user_data['email']); ?></span></p>
-    <p><strong>Registration Number:</strong> <span id="userRegNo"><?php echo htmlspecialchars($user_data['regNo']); ?></span></p>
-    <p><strong>Branch:</strong> <span id="userBranch"><?php echo htmlspecialchars($user_data['branch']); ?></span></p>
-    <p><strong>Year:</strong> <span id="userYear"><?php echo htmlspecialchars($user_data['year']); ?></span></p>
-    <p><strong>Credits:</strong> <span id="userCredits"><?php echo htmlspecialchars($user_data['credits']); ?></span></p>
-    <p><strong>Events Played:</strong> <span id="userEventsPlayed"><?php echo htmlspecialchars($user_data['eventsPlayed']); ?></span></p>
-    <p><strong>Unique ID:</strong> <span id="userUniqueId"><?php echo htmlspecialchars($user_data['uniqueId']); ?></span></p>
-
-    <!-- QR Code Section -->
-    <div class="qr-container">
-        <h2>Your Check-In QR Code</h2>
-        <img id="qrCodeImage" src="" alt="QR Code">
+    <div class="container">
+        <div class="qr-container">
+            <p>credits</p>
+        </div>
+        <div class="credit-circle">
+            <div class="circle"></div>
+            <div class="number"><?php echo htmlspecialchars($user_data['credits']); ?></div>
+        </div>
+        <div class="qr-container">
+            <p>QR code for checkin</p>
+            <img id="qrCodeImage" src="" alt="QR Code">
+            <p>Unique ID: <?php echo htmlspecialchars($user_data['uniqueId']); ?></p>
+        </div>
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Event name</th>
+                    <th>Required Credits</th>
+                    <th>Status</th>
+                    <th>Register</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($events as $eventName => $eventDetails): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($eventName); ?></td>
+                    <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
+                    <td>
+                        <?php if (in_array($eventName, $registeredEvents)): ?>
+                            <span class="status-registered">Registered</span>
+                        <?php else: ?>
+                            <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <form method="POST" action="" style="display: inline;">
+                            <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
+                            <button type="submit" class="btn-register"
+                                    <?php echo (in_array($eventName, $registeredEvents) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
+                                <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php if ($success): ?>
+            <div id="popup" class="popup success show"><?php echo $success; ?></div>
+        <?php endif; ?>
+        <?php if ($error): ?>
+            <div id="popup" class="popup error show"><?php echo $error; ?></div>
+        <?php endif; ?>
     </div>
-
-    <!-- Events Registration Table -->
-    <h2>Available Events</h2>
-    <table class="events-table">
-        <thead>
-            <tr>
-                <th>Event Name</th>
-                <th>Description</th>
-                <th>Required Credits</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="eventsTableBody">
-            <?php foreach ($events as $eventName => $eventDetails): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($eventName); ?></td>
-                <td><?php echo htmlspecialchars($eventDetails['description']); ?></td>
-                <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
-                <td>
-                    <?php if (in_array($eventName, $registeredEvents)): ?>
-                        <span class="status-registered">Registered</span>
-                    <?php else: ?>
-                        <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <form method="POST" action="" style="display: inline;">
-                        <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
-                        <button type="submit" class="btn-register"
-                                <?php echo (in_array($eventName, $registeredEvents) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
-                            <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <?php if ($success): ?>
-        <div id="popup" class="popup success show"><?php echo $success; ?></div>
-    <?php endif; ?>
-
-    <?php if ($error): ?>
-        <div id="popup" class="popup error show"><?php echo $error; ?></div>
-    <?php endif; ?>
-
-    <!-- Include QRCode.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
     <script>
-        // Generate QR Code for the user's unique ID
         const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
         const playerDashboardUrl = `http://localhost/registration-system/admin/index.php?${uniqueId}`;
 
@@ -240,11 +283,9 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                 console.error("Error generating QR code:", err);
                 return;
             }
-            // Set the generated QR code as the image source
             document.getElementById("qrCodeImage").src = url;
         });
 
-        // Hide popup after 3 seconds
         window.onload = function() {
             const popup = document.getElementById('popup');
             if (popup) {
@@ -254,50 +295,43 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             }
         };
 
-        // Function to fetch user data and update the page
         function fetchUserData() {
-    fetch('fetch_user_data.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update all user data fields
-                document.getElementById('userName').textContent = data.user_data.name;
-                document.getElementById('userEmail').textContent = data.user_data.email;
-                document.getElementById('userRegNo').textContent = data.user_data.regNo;
-                document.getElementById('userBranch').textContent = data.user_data.branch;
-                document.getElementById('userYear').textContent = data.user_data.year;
-                document.getElementById('userCredits').textContent = data.user_data.credits;
-                document.getElementById('userEventsPlayed').textContent = data.user_data.eventsPlayed;
-                document.getElementById('userUniqueId').textContent = data.user_data.uniqueId;
+            fetch('fetch_user_data.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector('.user-info p:nth-child(1) strong').textContent = data.user_data.name;
+                        document.querySelector('.user-info p:nth-child(2)').textContent = data.user_data.email;
+                        document.querySelector('.user-info p:nth-child(3)').textContent = 'Registration Number: ' + data.user_data.regNo;
+                        document.querySelector('.user-info p:nth-child(4)').textContent = 'Events Played: ' + data.user_data.eventsPlayed;
+                        document.querySelector('.credit-circle .number').textContent = data.user_data.credits;
 
-                // Update events table
-                const eventsTableBody = document.getElementById('eventsTableBody');
-                if (eventsTableBody) {
-                    eventsTableBody.innerHTML = '';
-                    data.events.forEach(event => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${event.eventName}</td>
-                            <td>${event.description}</td>
-                            <td>${event.credits}</td>
-                            <td>${event.status}</td>
-                            <td>
-                                <form method="POST" action="" style="display: inline;">
-                                    <input type="hidden" name="eventName" value="${event.eventName}">
-                                    <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
-                                        ${event.buttonText}
-                                    </button>
-                                </form>
-                            </td>
-                        `;
-                        eventsTableBody.appendChild(row);
-                    });
-                }
-            }
-        })
-        .catch(error => console.error('Error fetching user data:', error));
-}
-        // Fetch user data every 5 seconds
+                        const eventsTableBody = document.querySelector('.events-table tbody');
+                        if (eventsTableBody) {
+                            eventsTableBody.innerHTML = '';
+                            data.events.forEach(event => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${event.eventName}</td>
+                                    <td>${event.credits}</td>
+                                    <td>${event.status}</td>
+                                    <td>
+                                        <form method="POST" action="" style="display: inline;">
+                                            <input type="hidden" name="eventName" value="${event.eventName}">
+                                            <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
+                                                ${event.buttonText}
+                                            </button>
+                                        </form>
+                                    </td>
+                                `;
+                                eventsTableBody.appendChild(row);
+                            });
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching user data:', error));
+        }
+
         setInterval(fetchUserData, 5000);
     </script>
 </body>
