@@ -6,6 +6,7 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+session_regenerate_id(true);
 
 $user_data = $_SESSION['user_data'];
 $error = '';
@@ -13,15 +14,7 @@ $success = '';
 
 // Get user's registered events
 $regNo = $user_data['regNo'];
-$registeredEvents = [];
-$stmt = $conn->prepare("SELECT eventName FROM events WHERE playerRegno = ?");
-$stmt->bind_param("s", $regNo);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $registeredEvents[] = $row['eventName'];
-}
-$stmt->close();
+$registeredEvents = getRegisteredEvents($conn, $regNo);
 
 // Define events and their details
 $events = [
@@ -36,25 +29,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if already registered
     if (in_array($eventName, $registeredEvents)) {
         $error = "You are already registered for $eventName!";
-    } 
+    }
     // Check if enough credits
     else if ($credits >= $events[$eventName]['credits']) {
         // Deduct credits from the player
         $newCredits = $credits - $events[$eventName]['credits'];
-        $updateCredits = $conn->prepare("UPDATE players SET credits = ? WHERE regNo = ?");
-        $updateCredits->bind_param("is", $newCredits, $regNo);
-        $updateCredits->execute();
+        updatePlayerCredits($conn, $regNo, $newCredits);
 
         // Set default values
         $eventCreditsValue = $events[$eventName]['credits'];
         $score = 0;
-        $played = 1;
+        $played = 0; // Set played to 0
 
         // Insert the event registration
-        $insertEvent = $conn->prepare("INSERT INTO events (eventName, playerRegno, credits, score, played) VALUES (?, ?, ?, ?, ?)");
-        $insertEvent->bind_param("ssiii", $eventName, $regNo, $eventCreditsValue, $score, $played);
-
-        if ($insertEvent->execute()) {
+        if (registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score, $played)) {
             $success = "Successfully registered for $eventName!";
             // Update session data
             $user_data['credits'] = $newCredits;
@@ -62,14 +50,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Add to registered events array
             $registeredEvents[] = $eventName;
         } else {
-            $error = "Error registering for the event: " . $insertEvent->error;
+            $error = "Error registering for the event.";
         }
-
-        $insertEvent->close();
-        $updateCredits->close();
     } else {
         $error = "Insufficient credits to register for $eventName!";
     }
+}
+
+function getRegisteredEvents($conn, $regNo) {
+    $stmt = $conn->prepare("SELECT eventName FROM events WHERE playerRegno = ?");
+    $stmt->bind_param("s", $regNo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $events = [];
+    while ($row = $result->fetch_assoc()) {
+        $events[] = $row['eventName'];
+    }
+    return $events;
+}
+
+function updatePlayerCredits($conn, $regNo, $newCredits) {
+    $updateCredits = $conn->prepare("UPDATE players SET credits = ? WHERE regNo = ?");
+    $updateCredits->bind_param("is", $newCredits, $regNo);
+    $updateCredits->execute();
+    $updateCredits->close();
+}
+
+function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score, $played) {
+    $insertEvent = $conn->prepare("INSERT INTO events (eventName, playerRegno, credits, score, played) VALUES (?, ?, ?, ?, ?)");
+    $insertEvent->bind_param("ssiii", $eventName, $regNo, $eventCreditsValue, $score, $played);
+    return $insertEvent->execute();
 }
 ?>
 
@@ -153,17 +163,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <h1>Welcome to the Fest</h1>
-    
+
     <!-- User Information Section -->
     <h2>User Information</h2>
-    <p><strong>Name:</strong> <?php echo htmlspecialchars($user_data['name']); ?></p>
-    <p><strong>Email:</strong> <?php echo htmlspecialchars($user_data['email']); ?></p>
-    <p><strong>Registration Number:</strong> <?php echo htmlspecialchars($user_data['regNo']); ?></p>
-    <p><strong>Branch:</strong> <?php echo htmlspecialchars($user_data['branch']); ?></p>
-    <p><strong>Year:</strong> <?php echo htmlspecialchars($user_data['year']); ?></p>
-    <p><strong>Credits:</strong> <?php echo htmlspecialchars($user_data['credits']); ?></p>
-    <p><strong>Events Played:</strong> <?php echo htmlspecialchars($user_data['eventsPlayed']); ?></p>
-    <p><strong>Unique ID:</strong> <?php echo htmlspecialchars($user_data['uniqueId']); ?></p>
+    <p><strong>Name:</strong> <span id="userName"><?php echo htmlspecialchars($user_data['name']); ?></span></p>
+    <p><strong>Email:</strong> <span id="userEmail"><?php echo htmlspecialchars($user_data['email']); ?></span></p>
+    <p><strong>Registration Number:</strong> <span id="userRegNo"><?php echo htmlspecialchars($user_data['regNo']); ?></span></p>
+    <p><strong>Branch:</strong> <span id="userBranch"><?php echo htmlspecialchars($user_data['branch']); ?></span></p>
+    <p><strong>Year:</strong> <span id="userYear"><?php echo htmlspecialchars($user_data['year']); ?></span></p>
+    <p><strong>Credits:</strong> <span id="userCredits"><?php echo htmlspecialchars($user_data['credits']); ?></span></p>
+    <p><strong>Events Played:</strong> <span id="userEventsPlayed"><?php echo htmlspecialchars($user_data['eventsPlayed']); ?></span></p>
+    <p><strong>Unique ID:</strong> <span id="userUniqueId"><?php echo htmlspecialchars($user_data['uniqueId']); ?></span></p>
 
     <!-- QR Code Section -->
     <div class="qr-container">
@@ -183,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="eventsTableBody">
             <?php foreach ($events as $eventName => $eventDetails): ?>
             <tr>
                 <td><?php echo htmlspecialchars($eventName); ?></td>
@@ -199,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <td>
                     <form method="POST" action="" style="display: inline;">
                         <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
-                        <button type="submit" class="btn-register" 
+                        <button type="submit" class="btn-register"
                                 <?php echo (in_array($eventName, $registeredEvents) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
                             <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
                         </button>
@@ -223,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         // Generate QR Code for the user's unique ID
         const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
-        const playerDashboardUrl = `https://yourwebsite.com/players-dashboard/${uniqueId}`;
+        const playerDashboardUrl = `http://localhost/registration-system/admin/index.php?${uniqueId}`;
 
         QRCode.toDataURL(playerDashboardUrl, { errorCorrectionLevel: "H" }, (err, url) => {
             if (err) {
@@ -243,6 +253,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }, 3000);
             }
         };
+
+        // Function to fetch user data and update the page
+        function fetchUserData() {
+            fetch('fetch_user_data.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('userName').textContent = data.user_data.name;
+                        document.getElementById('userEmail').textContent = data.user_data.email;
+                        document.getElementById('userRegNo').textContent = data.user_data.regNo;
+                        document.getElementById('userBranch').textContent = data.user_data.branch;
+                        document.getElementById('userYear').textContent = data.user_data.year;
+                        document.getElementById('userCredits').textContent = data.user_data.credits;
+                        document.getElementById('userEventsPlayed').textContent = data.user_data.eventsPlayed;
+                        document.getElementById('userUniqueId').textContent = data.user_data.uniqueId;
+
+                        // Update events table
+                        const eventsTableBody = document.getElementById('eventsTableBody');
+                        eventsTableBody.innerHTML = '';
+                        data.events.forEach(event => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${event.eventName}</td>
+                                <td>${event.description}</td>
+                                <td>${event.credits}</td>
+                                <td>${event.status}</td>
+                                <td>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="eventName" value="${event.eventName}">
+                                        <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
+                                            ${event.buttonText}
+                                        </button>
+                                    </form>
+                                </td>
+                            `;
+                            eventsTableBody.appendChild(row);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching user data:', error));
+        }
+
+        // Fetch user data every 5 seconds
+        setInterval(fetchUserData, 5000);
     </script>
 </body>
 </html>

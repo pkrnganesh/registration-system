@@ -28,7 +28,7 @@ if (isset($_GET)) {
 
         if ($result->num_rows > 0) {
             $playerDetails = $result->fetch_assoc();
-            
+
             // Fetch registered events
             $eventStmt = $conn->prepare("SELECT * FROM events WHERE playerRegno = ?");
             $eventStmt->bind_param("s", $playerDetails['regNo']);
@@ -54,15 +54,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
             // Update player credits
             $updateCredits = $conn->prepare("UPDATE players SET credits = credits + ? WHERE regNo = ?");
             $updateCredits->bind_param("is", $additionalCredits, $playerId);
-            
+
             if ($updateCredits->execute()) {
                 $success = "Successfully added {$additionalCredits} credits!";
-                
+
                 // Refresh player details
                 $stmt = $conn->prepare("SELECT * FROM players WHERE uniqueId = ?");
                 $stmt->bind_param("s", $uniqueId);
                 $stmt->execute();
                 $playerDetails = $stmt->get_result()->fetch_assoc();
+
+                // Update session data for the user
+                if (isset($_SESSION['user_data']) && $_SESSION['user_data']['regNo'] == $playerId) {
+                    $_SESSION['user_data']['credits'] += $additionalCredits;
+                }
             } else {
                 $error = "Error adding credits: " . $updateCredits->error;
             }
@@ -75,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
     }
 }
 
-// Handle marking event as played (existing code)
+// Handle marking event as played
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
     $eventId = $_POST['eventId'];
     $playerId = $playerDetails['regNo'];
@@ -208,10 +213,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             <div class="credit-form">
                 <h3>Add Credits</h3>
                 <form method="POST" action="">
-                    <input type="number" 
-                           name="additionalCredits" 
-                           placeholder="Enter credits" 
-                           min="1" 
+                    <input type="number"
+                           name="additionalCredits"
+                           placeholder="Enter credits"
+                           min="1"
                            required>
                     <button type="submit" name="addCredits">Add Credits</button>
                 </form>
@@ -245,8 +250,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
                                 <td>
                                     <form method="POST" action="" style="display: inline;">
                                         <input type="hidden" name="eventId" value="<?php echo $event['id']; ?>">
-                                        <button type="submit" 
-                                                class="action-button" 
+                                        <button type="submit"
+                                                class="action-button"
                                                 <?php echo $event['played'] ? 'disabled' : ''; ?>>
                                             <?php echo $event['played'] ? 'Completed' : 'Mark as Played'; ?>
                                         </button>
