@@ -1,50 +1,34 @@
 <?php
-include '../includes/db.php';
-
-// Fetch user details based on user_id passed in the URL
-$user_id = $_GET['user_id'] ?? 1; // Default user for testing
-$user = $conn->query("SELECT * FROM users WHERE id = $user_id")->fetch_assoc();
-
-if (!$user) {
-    die("User not found.");
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
 }
+
+$user_data = $_SESSION['user_data'];
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard</title>
+    <title>Fest Registration</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
-    <h2>Welcome, <?= $user['name'] ?></h2>
-    <p><strong>Email:</strong> <?= $user['email'] ?></p>
-    <p><strong>Credits:</strong> <?= $user['credits'] ?></p>
+    <h1>Welcome to the Fest</h1>
+    <p>Register now and participate in exciting games!</p>
+    <a href="register.php">Register Now</a>
 
-    <h3>Your QR Code:</h3>
-    <p>Use this QR code for event check-ins.</p>
-    <img src="../scripts/generate_qr.php?user_id=<?= $user['id'] ?>" alt="QR Code for Check-in" />
-
-    <h3>Transaction History:</h3>
-    <table border="1">
-        <tr>
-            <th>Transaction ID</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Date</th>
-        </tr>
-        <?php
-        // Fetch user's transaction history
-        $transactions = $conn->query("SELECT * FROM payments WHERE user_id = $user_id");
-        while ($transaction = $transactions->fetch_assoc()):
-        ?>
-        <tr>
-            <td><?= $transaction['id'] ?></td>
-            <td><?= $transaction['amount'] ?></td>
-            <td><?= $transaction['payment_status'] ?></td>
-            <td><?= $transaction['created_at'] ?></td>
-        </tr>
-        <?php endwhile; ?>
-    </table>
+    <h2>User Information</h2>
+    <p><strong>Name:</strong> <?php echo htmlspecialchars($user_data['name']); ?></p>
+    <p><strong>Email:</strong> <?php echo htmlspecialchars($user_data['email']); ?></p>
+    <p><strong>Registration Number:</strong> <?php echo htmlspecialchars($user_data['regNo']); ?></p>
+    <p><strong>Branch:</strong> <?php echo htmlspecialchars($user_data['branch']); ?></p>
+    <p><strong>Year:</strong> <?php echo htmlspecialchars($user_data['year']); ?></p>
+    <p><strong>Credits:</strong> <?php echo htmlspecialchars($user_data['credits']); ?></p>
+    <p><strong>Events Played:</strong> <?php echo htmlspecialchars($user_data['eventsPlayed']); ?></p>
+    <p><strong>Unique ID:</strong> <?php echo htmlspecialchars($user_data['uniqueId']); ?></p>
 </body>
 </html>

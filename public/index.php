@@ -1,4 +1,3 @@
-<?php include '../includes/header.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,4 +12,3 @@
     <a href="register.php">Register Now</a>
 </body>
 </html>
-<?php include '../includes/footer.php'; ?>
