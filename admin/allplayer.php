@@ -43,6 +43,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['replayEvent'])) {
+        $regNo = $_POST['regNo'];
+        $eventName = $_POST['eventName'];
+        $eventCredits = getEventCredits($eventName);
+        
+        // Check if player has enough credits
+        $playerCredits = getPlayerCredits($conn, $regNo);
+        if ($playerCredits >= $eventCredits) {
+            replayEvent($conn, $eventName, $regNo, $eventCredits);
+            $success = "Event set for replay successfully!";
+            // Refresh player data
+            $players = getAllPlayers($conn);
+        } else {
+            $error = "Not enough credits to replay this event!";
+        }
+    }
+    // ... existing POST handling code ...
+}
+
 function getAllPlayers($conn) {
     $stmt = $conn->prepare("SELECT * FROM players");
     $stmt->execute();
@@ -92,16 +112,40 @@ function deductCreditsForEvent($conn, $eventName, $regNo) {
 }
 
 function getPlayerEventStatus($conn, $regNo) {
-    $stmt = $conn->prepare("SELECT eventName, played FROM events WHERE playerRegno = ?");
+    $stmt = $conn->prepare("SELECT eventName, played, play_count FROM events WHERE playerRegno = ?");
     $stmt->bind_param("s", $regNo);
     $stmt->execute();
     $result = $stmt->get_result();
     $events = [];
     while ($row = $result->fetch_assoc()) {
-        $events[$row['eventName']] = $row['played'];
+        $events[$row['eventName']] = [
+            'played' => $row['played'],
+            'play_count' => $row['play_count']
+        ];
     }
     return $events;
 }
+
+function replayEvent($conn, $eventName, $regNo, $eventCredits) {
+    $conn->begin_transaction();
+    try {
+        // Update event status
+        $stmt = $conn->prepare("UPDATE events SET played = 0, play_count = play_count + 1 WHERE eventName = ? AND playerRegno = ?");
+        $stmt->bind_param("ss", $eventName, $regNo);
+        $stmt->execute();
+
+        // Deduct credits
+        $stmt = $conn->prepare("UPDATE players SET credits = credits - ? WHERE regNo = ?");
+        $stmt->bind_param("is", $eventCredits, $regNo);
+        $stmt->execute();
+
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
+    }
+}
+
 
 ?>
 
@@ -179,6 +223,17 @@ function getPlayerEventStatus($conn, $regNo) {
             min-width: 120px;
         }
     </style>
+    <style>
+        .btn-replay {
+            background-color: #ff9800;
+        }
+        .btn-replay:disabled {
+            background-color: #cccccc;
+        }
+        .event-column {
+            min-width: 200px;
+        }
+    </style>
 </head>
 <body>
     <h1>Admin Dashboard</h1>
@@ -231,14 +286,24 @@ function getPlayerEventStatus($conn, $regNo) {
                             </button>
                         </form>
                     <?php else: ?>
-                        <?php if ($eventStatus[$eventName] == 0): ?>
+                        <?php if ($eventStatus[$eventName]['played'] == 0): ?>
                             <form method="POST" action="" style="display: inline;">
                                 <input type="hidden" name="regNo" value="<?php echo htmlspecialchars($player['regNo']); ?>">
                                 <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
                                 <button type="submit" name="playEvent" class="btn btn-play">Play</button>
                             </form>
                         <?php else: ?>
-                            <button class="btn btn-played" disabled>Played</button>
+                            <div>
+                                <button class="btn btn-played" disabled>Played (<?php echo $eventStatus[$eventName]['play_count']; ?>)</button>
+                                <form method="POST" action="" style="display: inline;">
+                                    <input type="hidden" name="regNo" value="<?php echo htmlspecialchars($player['regNo']); ?>">
+                                    <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
+                                    <button type="submit" name="replayEvent" class="btn btn-replay"
+                                        <?php echo ($player['credits'] < getEventCredits($eventName)) ? 'disabled' : ''; ?>>
+                                        Replay (<?php echo getEventCredits($eventName); ?> credits)
+                                    </button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     <?php endif; ?>
                 </td>
@@ -247,6 +312,7 @@ function getPlayerEventStatus($conn, $regNo) {
             <?php endforeach; ?>
         </tbody>
     </table>
+
 
     <?php if ($success): ?>
         <div class="popup success show"><?php echo $success; ?></div>
