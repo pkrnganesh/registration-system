@@ -532,11 +532,14 @@ const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
             }
         };
 
-        // Toggle QR popup
         function toggleQRPopup() {
-            const qrPopup = document.getElementById('qrPopup');
-            qrPopup.style.display = qrPopup.style.display === 'none' ? 'block' : 'none';
-        }
+    const qrPopup = document.getElementById('qrPopup');
+    if (qrPopup.style.display === 'block') {
+        qrPopup.style.display = 'none';
+    } else {
+        qrPopup.style.display = 'block';
+    }
+}
 
         // Close QR popup when clicking outside
         document.addEventListener('click', function(event) {

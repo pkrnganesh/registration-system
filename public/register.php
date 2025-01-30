@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-    
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -91,11 +91,24 @@
             display: block;
         }
 
+        .login-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #cc0000;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 480px) {
             form {
                 padding: 10px;
             }
-            
+
             input, select, button {
                 font-size: 14px;
             }
@@ -199,12 +212,14 @@
         <button type="submit">Register</button>
     </form>
 
+    <a href="../public/login.php" class="login-link">Already registered? Go to Login</a>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registrationForm');
             const phoneInput = document.getElementById('phoneNumber');
             const regNoInput = document.getElementById('regNo');
-            
+
             // Phone number validation (numbers only)
             phoneInput.addEventListener('input', function(e) {
                 this.value = this.value.replace(/[^0-9]/g, '');
@@ -248,7 +263,7 @@
                 popup.className = 'popup error show';
                 popup.textContent = message;
                 document.body.appendChild(popup);
-                
+
                 setTimeout(function() {
                     popup.remove();
                 }, 3000);

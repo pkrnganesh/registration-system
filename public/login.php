@@ -92,7 +92,7 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
         .logo-container {
             margin-bottom: 30px;
             text-align: center;
-            margin-top: 60px; /* Added space for error message */
+            margin-top: 60px;
         }
 
         .logo {
@@ -162,12 +162,21 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
             background-color: #aa0000;
         }
 
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #cc0000;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 15px;
             }
 
-            input, button {
+            input,
+            button {
                 font-size: 14px;
             }
 
@@ -204,6 +213,8 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
 
             <button type="submit">Login</button>
         </form>
+
+       <div class="register-link" onclick="redirectToRegister()"> If not registered?Go Register </div>
     </div>
 
     <script>
@@ -214,26 +225,26 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
             const popup = document.getElementById('popup');
 
             fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    popup.className = 'popup success show';
-                    popup.textContent = data.message;
-                    window.location.href = 'newdashboard.php';
-                } else {
-                    popup.className = 'popup error show';
-                    popup.textContent = data.message;
-                    setTimeout(function() {
-                        popup.classList.remove('show');
-                    }, 3000);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        popup.className = 'popup success show';
+                        popup.textContent = data.message;
+                        window.location.href = 'newdashboard.php';
+                    } else {
+                        popup.className = 'popup error show';
+                        popup.textContent = data.message;
+                        setTimeout(function() {
+                            popup.classList.remove('show');
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         });
 
         window.onload = function() {
@@ -244,6 +255,10 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
                 }, 3000);
             }
         };
+
+        function redirectToRegister() {
+            window.location.href = 'register.php';
+        }
     </script>
 </body>
 
