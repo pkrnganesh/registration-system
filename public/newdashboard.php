@@ -287,30 +287,65 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
         .logout-btn:hover {
             background: #ff4b2b;
         }
-        .popup {
+       /* Update the base popup styles */
+       .popup {
             visibility: hidden;
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 16px 32px;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
             opacity: 0;
             transition: all 0.3s;
+            z-index: 1000;
+            text-align: center;
+            min-width: 200px;
+            max-width: 90%;
         }
+
         .popup.show {
             visibility: visible;
             opacity: 1;
-            bottom: 50px;
+            bottom: 40px;
         }
+
         .popup.success {
             background-color: #4CAF50;
             color: white;
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
         }
+
         .popup.error {
             background-color: #f44336;
             color: white;
+            box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
+        }
+
+        /* Add mobile-specific styles */
+        @media (max-width: 600px) {
+            .popup {
+                padding: 8px 16px;
+                font-size: 12px;
+                min-width: 150px;
+                max-width: 85%;
+                bottom: 20px;
+            }
+
+            .popup.show {
+                bottom: 30px;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 360px) {
+            .popup {
+                padding: 6px 12px;
+                font-size: 11px;
+                min-width: 120px;
+                border-radius: 4px;
+            }
         }
       /* Add these styles inside your existing media query for mobile devices */
       @media (max-width: 600px) {
