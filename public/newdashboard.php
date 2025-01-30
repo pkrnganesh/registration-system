@@ -12,7 +12,7 @@ $user_data = $_SESSION['user_data'];
 $error = '';
 $success = '';
 
-if(isset($_POST['logout'])) {
+if (isset($_POST['logout'])) {
     session_unset();
     session_destroy();
     header("Location: login.php");
@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventName'])) {
     }
 }
 
-function getRegisteredEvents($conn, $regNo) {
+function getRegisteredEvents($conn, $regNo)
+{
     $stmt = $conn->prepare("SELECT eventName FROM events WHERE playerRegno = ?");
     $stmt->bind_param("s", $regNo);
     $stmt->execute();
@@ -98,14 +99,16 @@ function getRegisteredEvents($conn, $regNo) {
     return $events;
 }
 
-function updatePlayerCredits($conn, $regNo, $newCredits) {
+function updatePlayerCredits($conn, $regNo, $newCredits)
+{
     $updateCredits = $conn->prepare("UPDATE players SET credits = ? WHERE regNo = ?");
     $updateCredits->bind_param("is", $newCredits, $regNo);
     $updateCredits->execute();
     $updateCredits->close();
 }
 
-function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score, $played) {
+function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score, $played)
+{
     $insertEvent = $conn->prepare("INSERT INTO events (eventName, playerRegno, credits, score, played) VALUES (?, ?, ?, ?, ?)");
     $insertEvent->bind_param("ssiii", $eventName, $regNo, $eventCreditsValue, $score, $played);
     return $insertEvent->execute();
@@ -114,10 +117,13 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fest Registration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -127,25 +133,48 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             padding: 20px;
             min-height: 100vh;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
         }
+
         .profile-section {
             background: linear-gradient(145deg, #1a1a1a, #333);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             position: relative;
         }
+
         .profile-header {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
+        .profile-info-container {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .scan-icon {
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .scan-icon:hover {
+            color: #ff416c;
+        }
+
         .profile-avatar {
             width: 60px;
             height: 60px;
@@ -160,44 +189,53 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             cursor: pointer;
             transition: transform 0.3s;
         }
+
         .profile-avatar:hover {
             transform: scale(1.05);
         }
+
         .profile-name {
             flex-grow: 1;
         }
+
         .profile-name h2 {
             margin: 0;
             font-size: 24px;
             color: #fff;
         }
+
         .profile-name p {
             margin: 5px 0 0;
             color: #888;
             font-size: 14px;
         }
+
         .profile-info {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .info-item {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 15px;
             border-radius: 8px;
         }
+
         .info-item label {
             display: block;
             color: #888;
             font-size: 12px;
             margin-bottom: 5px;
         }
+
         .info-item span {
             color: #fff;
             font-size: 16px;
             font-weight: 500;
         }
+
         .credit-display {
             background: linear-gradient(45deg, #2196F3, #00BCD4);
             padding: 20px;
@@ -205,33 +243,40 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             text-align: center;
             margin-top: 20px;
         }
+
         .credit-display .number {
             font-size: 36px;
             font-weight: bold;
             color: white;
         }
+
         .events-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
         }
-        .events-table th, .events-table td {
+
+        .events-table th,
+        .events-table td {
             padding: 15px;
             text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .events-table th {
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             font-weight: 500;
             text-transform: uppercase;
             font-size: 14px;
         }
+
         .events-table tbody tr:hover {
-            background-color: rgba(255,255,255,0.05);
+            background-color: rgba(255, 255, 255, 0.05);
         }
+
         .btn-register {
             padding: 8px 16px;
             background: linear-gradient(45deg, #4CAF50, #45a049);
@@ -242,17 +287,21 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             font-weight: 500;
             transition: transform 0.2s;
         }
+
         .btn-register:hover:not(:disabled) {
             transform: translateY(-2px);
         }
+
         .btn-register:disabled {
             background: #666;
             cursor: not-allowed;
         }
+
         .status-registered {
             color: #4CAF50;
             font-weight: 500;
         }
+
         .qr-popup {
             display: none;
             position: fixed;
@@ -262,10 +311,11 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             background: #1a1a1a;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             z-index: 1000;
             text-align: center;
         }
+
         .qr-popup img {
             margin: 15px 0;
             padding: 15px;
@@ -273,6 +323,7 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             border-radius: 10px;
             max-width: 200px;
         }
+
         .logout-btn {
             background: #ff416c;
             color: white;
@@ -284,19 +335,20 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             font-weight: 500;
             transition: background 0.3s;
         }
+
         .logout-btn:hover {
             background: #ff4b2b;
         }
-       /* Update the base popup styles */
-       .popup {
+
+        .popup {
             visibility: hidden;
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
             opacity: 0;
             transition: all 0.3s;
             z-index: 1000;
@@ -308,7 +360,7 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
         .popup.show {
             visibility: visible;
             opacity: 1;
-            bottom: 40px;
+            bottom: 50px;
         }
 
         .popup.success {
@@ -320,60 +372,40 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
         .popup.error {
             background-color: #f44336;
             color: white;
-            box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
         }
 
-        /* Add mobile-specific styles */
+        /* Add these styles inside your existing media query for mobile devices */
         @media (max-width: 600px) {
-            .popup {
-                padding: 8px 16px;
-                font-size: 12px;
-                min-width: 150px;
-                max-width: 85%;
-                bottom: 20px;
-            }
-
-            .popup.show {
-                bottom: 30px;
-            }
-        }
-
-        /* Extra small screens */
-        @media (max-width: 360px) {
-            .popup {
-                padding: 6px 12px;
-                font-size: 11px;
-                min-width: 120px;
-                border-radius: 4px;
-            }
-        }
-      /* Add these styles inside your existing media query for mobile devices */
-      @media (max-width: 600px) {
             body {
                 padding: 10px;
             }
+
             .profile-info {
                 grid-template-columns: 1fr;
             }
+
             .profile-name h2 {
                 font-size: 20px;
             }
+
             .credit-display .number {
                 font-size: 28px;
             }
 
             /* Updated table styles for mobile */
             .events-table {
-                font-size: 12px; /* Reduced base font size */
+                font-size: 12px;
+                /* Reduced base font size */
             }
-            
-            .events-table th, 
+
+            .events-table th,
             .events-table td {
-                padding: 8px 6px; /* Reduced padding */
+                padding: 8px 6px;
+                /* Reduced padding */
                 font-size: 12px;
                 text-align: center;
             }
-            
+
             .events-table th {
                 font-size: 11px;
                 text-transform: uppercase;
@@ -413,7 +445,8 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
 
         /* Add styles for extra small screens */
         @media (max-width: 360px) {
-            .events-table th, 
+
+            .events-table th,
             .events-table td {
                 padding: 6px 4px;
                 font-size: 11px;
@@ -424,8 +457,93 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                 font-size: 10px;
             }
         }
+
+        #scannerModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scanner-content {
+            position: relative;
+            width: 320px;
+            background: rgb(105, 10, 10);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-scanner {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            color: #000;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1002;
+            background: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #reader {
+            background: white;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        /* Hide stop scanning button */
+        #reader__dashboard_section_swaplink {
+            display: none !important;
+        }
+
+        #reader video {
+            width: 100% !important;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            background: #ff416c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+            margin-top: 15px;
+        }
+
+        .close-btn:hover {
+            background: #ff4b2b;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .scanner-content {
+                max-width: 90%;
+                padding: 15px;
+            }
+
+            #reader {
+                max-height: 300px;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="profile-section">
@@ -433,9 +551,12 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                 <div class="profile-avatar" onclick="toggleQRPopup()">
                     <?php echo strtoupper(substr($user_data['name'], 0, 1)); ?>
                 </div>
-                <div class="profile-name">
-                    <h2><?php echo htmlspecialchars($user_data['name']); ?></h2>
-                    <p><?php echo htmlspecialchars($user_data['email']); ?></p>
+                <div class="profile-info-container">
+                    <div class="profile-name">
+                        <h2><?php echo htmlspecialchars($user_data['name']); ?></h2>
+                        <p><?php echo htmlspecialchars($user_data['email']); ?></p>
+                    </div>
+                    <i class="fas fa-qrcode scan-icon" id="openScanner"></i>
                 </div>
             </div>
             <div class="profile-info">
@@ -461,26 +582,26 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             </thead>
             <tbody>
                 <?php foreach ($events as $eventName => $eventDetails): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($eventName); ?></td>
-                    <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
-                    <td>
-                        <?php if (in_array($eventName, $registeredEvents)): ?>
-                            <span class="status-registered">Registered</span>
-                        <?php else: ?>
-                            <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <form method="POST" action="" style="display: inline;">
-                            <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
-                            <button type="submit" class="btn-register"
+                    <tr>
+                        <td><?php echo htmlspecialchars($eventName); ?></td>
+                        <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
+                        <td>
+                            <?php if (in_array($eventName, $registeredEvents)): ?>
+                                <span class="status-registered">Registered</span>
+                            <?php else: ?>
+                                <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <form method="POST" action="" style="display: inline;">
+                                <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
+                                <button type="submit" class="btn-register"
                                     <?php echo (in_array($eventName, $registeredEvents) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
-                                <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
+                                    <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -503,13 +624,21 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
         </form>
     </div>
 
+    <div id="scannerModal">
+        <div class="scanner-content">
+            <span class="close-scanner" id="closeScanner">&times;</span>
+            <div id="reader"></div>
+            <div id="result"></div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
     <script>
-const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
+        const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
         const playerDashboardUrl = `http://localhost/registration-system/admin/index.php?${uniqueId}`;
 
         // Generate QR Code
-        QRCode.toDataURL(playerDashboardUrl, { 
+        QRCode.toDataURL(playerDashboardUrl, {
             errorCorrectionLevel: "H",
             width: 200,
             height: 200,
@@ -532,22 +661,19 @@ const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
             }
         };
 
+        // Toggle QR popup
         function toggleQRPopup() {
-    const qrPopup = document.getElementById('qrPopup');
-    if (qrPopup.style.display === 'block') {
-        qrPopup.style.display = 'none';
-    } else {
-        qrPopup.style.display = 'block';
-    }
-}
+            const qrPopup = document.getElementById('qrPopup');
+            qrPopup.style.display = qrPopup.style.display === 'none' ? 'block' : 'none';
+        }
 
         // Close QR popup when clicking outside
         document.addEventListener('click', function(event) {
             const qrPopup = document.getElementById('qrPopup');
             const profileAvatar = document.querySelector('.profile-avatar');
-            
-            if (qrPopup.style.display === 'block' && 
-                !qrPopup.contains(event.target) && 
+
+            if (qrPopup.style.display === 'block' &&
+                !qrPopup.contains(event.target) &&
                 !profileAvatar.contains(event.target)) {
                 qrPopup.style.display = 'none';
             }
@@ -563,7 +689,7 @@ const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
                         document.querySelector('.profile-name h2').textContent = data.user_data.name;
                         document.querySelector('.profile-name p').textContent = data.user_data.email;
                         document.querySelector('.info-item span').textContent = data.user_data.regNo;
-                        
+
                         // Update credits
                         const creditsSpan = document.querySelectorAll('.info-item span')[1];
                         if (creditsSpan) {
@@ -609,7 +735,7 @@ const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
                     this.style.transform = 'translateY(-2px)';
                 }
             });
-            
+
             button.addEventListener('mouseout', function() {
                 if (!this.disabled) {
                     this.style.transform = 'translateY(0)';
@@ -617,5 +743,57 @@ const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
             });
         });
     </script>
+    <script>
+        let html5QrcodeScanner = null;
+
+        document.getElementById('openScanner').addEventListener('click', function() {
+            document.getElementById('scannerModal').style.display = 'flex';
+            initializeScanner();
+        });
+
+        document.getElementById('closeScanner').addEventListener('click', function() {
+            closeScanner();
+        });
+
+        function initializeScanner() {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", {
+                    fps: 10,
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    },
+                    rememberLastUsedCamera: true,
+                    showTorchButtonIfSupported: true,
+                    hideControls: true // Hides default controls including stop button
+                }
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function closeScanner() {
+            const scannerModal = document.getElementById('scannerModal');
+            scannerModal.style.display = 'none';
+
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error('Failed to clear scanner:', error);
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log('QR Code scanned:', decodedText);
+            if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                window.location.href = decodedText;
+            }
+            closeScanner();
+        }
+
+        function onScanFailure(error) {
+            console.warn(`QR Code scanning failed: ${error}`);
+        }
+    </script>
 </body>
+
 </html>
