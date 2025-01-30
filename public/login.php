@@ -222,7 +222,7 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
                 if (data.success) {
                     popup.className = 'popup success show';
                     popup.textContent = data.message;
-                    window.location.href = 'dashboard.php';
+                    window.location.href = 'newdashboard.php';
                 } else {
                     popup.className = 'popup error show';
                     popup.textContent = data.message;
