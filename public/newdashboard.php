@@ -33,7 +33,7 @@ if (isset($_GET['event'])) {
     if (array_key_exists($eventName, $events)) {
         $credits = $user_data['credits'];
 
-        if (in_array($eventName, $registeredEvents)) {
+        if (in_array($eventName, array_column($registeredEvents, 'eventName'))) {
             $error = "You are already registered for $eventName!";
         } else if ($credits >= $events[$eventName]['credits']) {
             $newCredits = $credits - $events[$eventName]['credits'];
@@ -47,7 +47,7 @@ if (isset($_GET['event'])) {
                 $success = "Successfully registered for $eventName!";
                 $user_data['credits'] = $newCredits;
                 $_SESSION['user_data'] = $user_data;
-                $registeredEvents[] = $eventName;
+                $registeredEvents[] = ['eventName' => $eventName, 'credits' => $eventCreditsValue, 'played' => $played];
             } else {
                 $error = "Error registering for the event.";
             }
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventName'])) {
     $eventName = $_POST['eventName'];
     $credits = $user_data['credits'];
 
-    if (in_array($eventName, $registeredEvents)) {
+    if (in_array($eventName, array_column($registeredEvents, 'eventName'))) {
         $error = "You are already registered for $eventName!";
     } else if ($credits >= $events[$eventName]['credits']) {
         $newCredits = $credits - $events[$eventName]['credits'];
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventName'])) {
             $success = "Successfully registered for $eventName!";
             $user_data['credits'] = $newCredits;
             $_SESSION['user_data'] = $user_data;
-            $registeredEvents[] = $eventName;
+            $registeredEvents[] = ['eventName' => $eventName, 'credits' => $eventCreditsValue, 'played' => $played];
         } else {
             $error = "Error registering for the event.";
         }
@@ -88,13 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventName'])) {
 
 function getRegisteredEvents($conn, $regNo)
 {
-    $stmt = $conn->prepare("SELECT eventName FROM events WHERE playerRegno = ?");
+    $stmt = $conn->prepare("SELECT eventName, credits, played FROM events WHERE playerRegno = ?");
     $stmt->bind_param("s", $regNo);
     $stmt->execute();
     $result = $stmt->get_result();
     $events = [];
     while ($row = $result->fetch_assoc()) {
-        $events[] = $row['eventName'];
+        $events[] = $row;
     }
     return $events;
 }
@@ -571,6 +571,8 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
             </div>
         </div>
 
+        <!-- Table for events to register before the fest -->
+        <h5>Events to Register Before FEB 10th 2025</h5>
         <table class="events-table">
             <thead>
                 <tr>
@@ -586,7 +588,7 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                         <td><?php echo htmlspecialchars($eventName); ?></td>
                         <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
                         <td>
-                            <?php if (in_array($eventName, $registeredEvents)): ?>
+                            <?php if (in_array($eventName, array_column($registeredEvents, 'eventName'))): ?>
                                 <span class="status-registered">Registered</span>
                             <?php else: ?>
                                 <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
@@ -596,11 +598,32 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                             <form method="POST" action="" style="display: inline;">
                                 <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
                                 <button type="submit" class="btn-register"
-                                    <?php echo (in_array($eventName, $registeredEvents) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
-                                    <?php echo in_array($eventName, $registeredEvents) ? 'Registered' : 'Register'; ?>
+                                    <?php echo (in_array($eventName, array_column($registeredEvents, 'eventName')) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
+                                    <?php echo in_array($eventName, array_column($registeredEvents, 'eventName')) ? 'Registered' : 'Register'; ?>
                                 </button>
                             </form>
                         </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <!-- Table for all registered events -->
+        <h3>All Registered Events</h3>
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Event Name</th>
+                    <th>Credits</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($registeredEvents as $event): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($event['eventName']); ?></td>
+                        <td><?php echo htmlspecialchars($event['credits']); ?></td>
+                        <td><?php echo $event['played'] ? 'Played' : 'Not Played'; ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -635,7 +658,7 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
     <script>
         const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
-        const playerDashboardUrl = `http://localhost/registration-system/admin/index.php?${uniqueId}`;
+        const playerDashboardUrl = `http://localhost/registration-system/admin/userdashboard.php?${uniqueId}`;
 
         // Generate QR Code
         QRCode.toDataURL(playerDashboardUrl, {
@@ -663,9 +686,9 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
 
         // Toggle QR popup
         function toggleQRPopup() {
-            const qrPopup = document.getElementById('qrPopup');
-            qrPopup.style.display = qrPopup.style.display === 'none' ? 'block' : 'none';
-        }
+    const qrPopup = document.getElementById('qrPopup');
+    qrPopup.style.display = qrPopup.style.display === 'none' || qrPopup.style.display === '' ? 'block' : 'none';
+}
 
         // Close QR popup when clicking outside
         document.addEventListener('click', function(event) {

@@ -101,7 +101,12 @@ function getEventCredits($eventName)
 {
     $events = [
         'Free Fire' => 100,
-        'Squid' => 150
+        'Squid' => 150,
+        'Game1' => 100,
+        'Game2' => 120,
+        'Game3' => 50,
+        'Game4' => 10,
+        'Game5' => 500
     ];
     return $events[$eventName];
 }
@@ -148,8 +153,6 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
         throw $e;
     }
 }
-
-
 ?>
 
 <!DOCTYPE html>
@@ -278,7 +281,7 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                 <th>Year</th>
                 <th>Credits</th>
                 <th>Add Credits</th>
-                <?php foreach (['Free Fire', 'Squid'] as $eventName): ?>
+                <?php foreach (['Free Fire', 'Squid', 'Game1', 'Game2', 'Game3', 'Game4', 'Game5'] as $eventName): ?>
                     <th class="event-column"><?php echo htmlspecialchars($eventName); ?></th>
                 <?php endforeach; ?>
             </tr>
@@ -301,7 +304,7 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                             <button type="submit" name="addCredits" class="btn btn-register">Add</button>
                         </form>
                     </td>
-                    <?php foreach (['Free Fire', 'Squid'] as $eventName): ?>
+                    <?php foreach (['Free Fire', 'Squid', 'Game1', 'Game2', 'Game3', 'Game4', 'Game5'] as $eventName): ?>
                         <td class="event-column">
                             <?php if (!isset($eventStatus[$eventName])): ?>
                                 <form method="POST" action="" style="display: inline;">
@@ -338,7 +341,6 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
             <?php endforeach; ?>
         </tbody>
     </table>
-
 
     <?php if ($success): ?>
         <div class="popup success show"><?php echo $success; ?></div>
