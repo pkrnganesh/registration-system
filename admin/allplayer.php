@@ -100,13 +100,19 @@ function playEvent($conn, $eventName, $regNo)
 function getEventCredits($eventName)
 {
     $events = [
-        'Free Fire' => 100,
         'Squid' => 150,
-        'Game1' => 100,
-        'Game2' => 120,
-        'Game3' => 50,
-        'Game4' => 10,
-        'Game5' => 500
+        'Code Fighters' => 100,
+        'Red Light Green Light' => 120,
+        'Gongi' => 50,
+        'Dalgona Cookie' => 10,
+        'Dadkji' => 500,
+        'Temple Run' => 500,
+        'Code Master' => 500,
+        'Spell Casters' => 500,
+        'KBC' => 500,
+        'Ideathon' => 500,
+        'Online Housie' => 500,
+        'Clash Battle' => 500
     ];
     return $events[$eventName];
 }
@@ -270,7 +276,6 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Search by Registration Number" onkeyup="filterPlayers()">
     </div>
-
     <table class="players-table" id="playersTable">
         <thead>
             <tr>
@@ -281,7 +286,7 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                 <th>Year</th>
                 <th>Credits</th>
                 <th>Add Credits</th>
-                <?php foreach (['Free Fire', 'Squid', 'Game1', 'Game2', 'Game3', 'Game4', 'Game5'] as $eventName): ?>
+                <?php foreach (['Squid Hunt', 'Code Fighters', 'Red Light Green Light', 'Gongi', 'Dalgona Cookie', 'Dadkji', 'Temple Run', 'Code Master', 'Spell Casters', 'KBC', 'Ideathon', 'Online Housie', 'Clash Battle'] as $eventName): ?>
                     <th class="event-column"><?php echo htmlspecialchars($eventName); ?></th>
                 <?php endforeach; ?>
             </tr>
@@ -304,7 +309,7 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                             <button type="submit" name="addCredits" class="btn btn-register">Add</button>
                         </form>
                     </td>
-                    <?php foreach (['Free Fire', 'Squid', 'Game1', 'Game2', 'Game3', 'Game4', 'Game5'] as $eventName): ?>
+                    <?php foreach (['Squid', 'Code Fighters', 'Red Light Green Light', 'Gongi', 'Dalgona Cookie', 'Dadkji', 'Temple Run', 'Code Master', 'Spell Casters', 'KBC', 'Ideathon', 'Online Housie', 'Clash Battle'] as $eventName): ?>
                         <td class="event-column">
                             <?php if (!isset($eventStatus[$eventName])): ?>
                                 <form method="POST" action="" style="display: inline;">

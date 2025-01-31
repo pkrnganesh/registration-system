@@ -17,19 +17,15 @@ $result = $stmt->get_result();
 $user_data = $result->fetch_assoc();
 $stmt->close();
 
-// Update session with fresh data
 $_SESSION['user_data'] = $user_data;
 
-// Get user's registered events
 $registeredEvents = getRegisteredEvents($conn, $regNo);
 
-// Define events and their details
 $events = [
     'Free Fire' => ['credits' => 100, 'description' => 'Battle Royale Game'],
     'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge']
 ];
 
-// Prepare events data for the response
 $eventsData = [];
 foreach ($events as $eventName => $eventDetails) {
     $status = in_array($eventName, $registeredEvents) ? 'Registered' :
