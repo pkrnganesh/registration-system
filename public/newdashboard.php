@@ -24,8 +24,25 @@ $registeredEvents = getRegisteredEvents($conn, $regNo);
 
 $events = [
     'Free Fire' => ['credits' => 100, 'description' => 'Battle Royale Game'],
-    'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge']
+    'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge'],
+    'Code Fighters' => ['credits' => 150, 'description' => 'Coding Competition'],
+    'Red Light Green Light' => ['credits' => 120, 'description' => 'Classic Game'],
+    'Gongi' => ['credits' => 50, 'description' => 'Traditional Game'],
+    'Dalgona Cookie' => ['credits' => 10, 'description' => 'Cookie Challenge'],
+    'Dadkji' => ['credits' => 500, 'description' => 'Traditional Game'],
+    'Temple Run' => ['credits' => 500, 'description' => 'Running Game'],
+    'Code Master' => ['credits' => 500, 'description' => 'Coding Competition'],
+    'Spell Casters' => ['credits' => 500, 'description' => 'Spelling Bee'],
+    'KBC' => ['credits' => 500, 'description' => 'Quiz Show'],
+    'Ideathon' => ['credits' => 500, 'description' => 'Idea Pitching'],
+    'Online Housie' => ['credits' => 500, 'description' => 'Bingo Game'],
+    'Clash Battle' => ['credits' => 500, 'description' => 'Battle Royale Game']
 ];
+
+// Filter the events to include only 'Free Fire' and 'Squid' for display
+$filteredEvents = array_filter($events, function($eventName) {
+    return in_array($eventName, ['Free Fire', 'Squid']);
+}, ARRAY_FILTER_USE_KEY);
 
 // Check if an event name is passed via the URL
 if (isset($_GET['event'])) {
@@ -583,7 +600,7 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($events as $eventName => $eventDetails): ?>
+                <?php foreach ($filteredEvents as $eventName => $eventDetails): ?>
                     <tr>
                         <td><?php echo htmlspecialchars($eventName); ?></td>
                         <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
@@ -686,9 +703,9 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
 
         // Toggle QR popup
         function toggleQRPopup() {
-    const qrPopup = document.getElementById('qrPopup');
-    qrPopup.style.display = qrPopup.style.display === 'none' || qrPopup.style.display === '' ? 'block' : 'none';
-}
+            const qrPopup = document.getElementById('qrPopup');
+            qrPopup.style.display = qrPopup.style.display === 'none' || qrPopup.style.display === '' ? 'block' : 'none';
+        }
 
         // Close QR popup when clicking outside
         document.addEventListener('click', function(event) {
