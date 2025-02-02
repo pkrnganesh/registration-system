@@ -42,8 +42,17 @@ foreach ($events as $eventName => $eventDetails) {
         'buttonText' => $buttonText
     ];
 }
+//set the dead line to end the registations
+$currentDate = new DateTime();
+$deadlineDate = new DateTime('2025-02-11');
+$registrationOpen = $currentDate < $deadlineDate;
 
-echo json_encode(['success' => true, 'user_data' => $user_data, 'events' => $eventsData]);
+echo json_encode([
+    'success' => true,
+    'user_data' => $user_data,
+    'events' => $eventsData,
+    'registrationOpen' => $registrationOpen
+]);
 
 function getRegisteredEvents($conn, $regNo) {
     $stmt = $conn->prepare("SELECT eventName FROM events WHERE playerRegno = ?");

@@ -40,7 +40,7 @@ $events = [
 ];
 
 // Filter the events to include only 'Free Fire' and 'Squid' for display
-$filteredEvents = array_filter($events, function($eventName) {
+$filteredEvents = array_filter($events, function ($eventName) {
     return in_array($eventName, ['Free Fire', 'Squid']);
 }, ARRAY_FILTER_USE_KEY);
 
@@ -130,6 +130,11 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
     $insertEvent->bind_param("ssiii", $eventName, $regNo, $eventCreditsValue, $score, $played);
     return $insertEvent->execute();
 }
+
+//set the dead line to end the registations
+$currentDate = new DateTime();
+$deadlineDate = new DateTime('2025-02-11');
+$registrationOpen = $currentDate < $deadlineDate;
 ?>
 
 <!DOCTYPE html>
@@ -615,8 +620,8 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
                             <form method="POST" action="" style="display: inline;">
                                 <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
                                 <button type="submit" class="btn-register"
-                                    <?php echo (in_array($eventName, array_column($registeredEvents, 'eventName')) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
-                                    <?php echo in_array($eventName, array_column($registeredEvents, 'eventName')) ? 'Registered' : 'Register'; ?>
+                                    <?php echo (!$registrationOpen || in_array($eventName, array_column($registeredEvents, 'eventName')) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
+                                    <?php echo in_array($eventName, array_column($registeredEvents, 'eventName')) ? 'Registered' : ($registrationOpen ? 'Register' : 'Registrations Closed'); ?>
                                 </button>
                             </form>
                         </td>
@@ -673,116 +678,122 @@ function registerForEvent($conn, $eventName, $regNo, $eventCreditsValue, $score,
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+ 
+
     <script>
-        const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
-        const playerDashboardUrl = `http://localhost/registration-system/admin/userdashboard.php?${uniqueId}`;
+    const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
+    const playerDashboardUrl = `http://localhost/registration-system/admin/userdashboard.php?${uniqueId}`;
 
-        // Generate QR Code
-        QRCode.toDataURL(playerDashboardUrl, {
-            errorCorrectionLevel: "H",
-            width: 200,
-            height: 200,
-            margin: 1
-        }, (err, url) => {
-            if (err) {
-                console.error("Error generating QR code:", err);
-                return;
-            }
-            document.getElementById("qrCodeImage").src = url;
-        });
-
-        // Handle popup messages
-        window.onload = function() {
-            const popup = document.getElementById('popup');
-            if (popup) {
-                setTimeout(function() {
-                    popup.classList.remove('show');
-                }, 3000);
-            }
-        };
-
-        // Toggle QR popup
-        function toggleQRPopup() {
-            const qrPopup = document.getElementById('qrPopup');
-            qrPopup.style.display = qrPopup.style.display === 'none' || qrPopup.style.display === '' ? 'block' : 'none';
+    // Generate QR Code
+    QRCode.toDataURL(playerDashboardUrl, {
+        errorCorrectionLevel: "H",
+        width: 200,
+        height: 200,
+        margin: 1
+    }, (err, url) => {
+        if (err) {
+            console.error("Error generating QR code:", err);
+            return;
         }
+        document.getElementById("qrCodeImage").src = url;
+    });
 
-        // Close QR popup when clicking outside
-        document.addEventListener('click', function(event) {
-            const qrPopup = document.getElementById('qrPopup');
-            const profileAvatar = document.querySelector('.profile-avatar');
+    // Handle popup messages
+    window.onload = function() {
+        const popup = document.getElementById('popup');
+        if (popup) {
+            setTimeout(function() {
+                popup.classList.remove('show');
+            }, 3000);
+        }
+    };
 
-            if (qrPopup.style.display === 'block' &&
-                !qrPopup.contains(event.target) &&
-                !profileAvatar.contains(event.target)) {
-                qrPopup.style.display = 'none';
-            }
-        });
+    // Toggle QR popup
+    function toggleQRPopup() {
+        const qrPopup = document.getElementById('qrPopup');
+        qrPopup.style.display = qrPopup.style.display === 'none' || qrPopup.style.display === '' ? 'block' : 'none';
+    }
 
-        // Fetch updated user data
-        function fetchUserData() {
-            fetch('fetch_user_data.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update profile information
-                        document.querySelector('.profile-name h2').textContent = data.user_data.name;
-                        document.querySelector('.profile-name p').textContent = data.user_data.email;
-                        document.querySelector('.info-item span').textContent = data.user_data.regNo;
+    // Close QR popup when clicking outside
+    document.addEventListener('click', function(event) {
+        const qrPopup = document.getElementById('qrPopup');
+        const profileAvatar = document.querySelector('.profile-avatar');
 
-                        // Update credits
-                        const creditsSpan = document.querySelectorAll('.info-item span')[1];
-                        if (creditsSpan) {
-                            creditsSpan.textContent = data.user_data.credits;
-                        }
+        if (qrPopup.style.display === 'block' &&
+            !qrPopup.contains(event.target) &&
+            !profileAvatar.contains(event.target)) {
+            qrPopup.style.display = 'none';
+        }
+    });
 
-                        // Update events table
-                        if (data.events) {
-                            const eventsTableBody = document.querySelector('.events-table tbody');
-                            if (eventsTableBody) {
-                                eventsTableBody.innerHTML = '';
-                                data.events.forEach(event => {
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${event.eventName}</td>
-                                        <td>${event.credits}</td>
-                                        <td>${event.status}</td>
-                                        <td>
-                                            <form method="POST" action="" style="display: inline;">
-                                                <input type="hidden" name="eventName" value="${event.eventName}">
-                                                <button type="submit" class="btn-register" ${event.disabled ? 'disabled' : ''}>
-                                                    ${event.buttonText}
-                                                </button>
-                                            </form>
-                                        </td>
-                                    `;
-                                    eventsTableBody.appendChild(row);
-                                });
-                            }
+    // Fetch updated user data
+    function fetchUserData() {
+        fetch('fetch_user_data.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update profile information
+                    document.querySelector('.profile-name h2').textContent = data.user_data.name;
+                    document.querySelector('.profile-name p').textContent = data.user_data.email;
+                    document.querySelector('.info-item span').textContent = data.user_data.regNo;
+
+                    // Update credits
+                    const creditsSpan = document.querySelectorAll('.info-item span')[1];
+                    if (creditsSpan) {
+                        creditsSpan.textContent = data.user_data.credits;
+                    }
+
+                    // Update events table
+                    if (data.events) {
+                        const eventsTableBody = document.querySelector('.events-table tbody');
+                        if (eventsTableBody) {
+                            eventsTableBody.innerHTML = '';
+                            data.events.forEach(event => {
+                                const row = document.createElement('tr');
+                                const buttonText = event.disabled || !data.registrationOpen ? 'Registrations Closed' :
+                                                   (event.status === 'Registered' ? 'Registered' : 'Register');
+                                row.innerHTML = `
+                                    <td>${event.eventName}</td>
+                                    <td>${event.credits}</td>
+                                    <td>${event.status}</td>
+                                    <td>
+                                        <form method="POST" action="" style="display: inline;">
+                                            <input type="hidden" name="eventName" value="${event.eventName}">
+                                            <button type="submit" class="btn-register" ${event.disabled || !data.registrationOpen ? 'disabled' : ''}>
+                                                ${buttonText}
+                                            </button>
+                                        </form>
+                                    </td>
+                                `;
+                                eventsTableBody.appendChild(row);
+                            });
                         }
                     }
-                })
-                .catch(error => console.error('Error fetching user data:', error));
-        }
-
-        // Update data every 5 seconds
-        setInterval(fetchUserData, 5000);
-
-        // Add smooth transitions for buttons
-        document.querySelectorAll('.btn-register').forEach(button => {
-            button.addEventListener('mouseover', function() {
-                if (!this.disabled) {
-                    this.style.transform = 'translateY(-2px)';
                 }
-            });
+            })
+            .catch(error => console.error('Error fetching user data:', error));
+    }
 
-            button.addEventListener('mouseout', function() {
-                if (!this.disabled) {
-                    this.style.transform = 'translateY(0)';
-                }
-            });
+    // Update data every 5 seconds
+    setInterval(fetchUserData, 5000);
+
+    // Add smooth transitions for buttons
+    document.querySelectorAll('.btn-register').forEach(button => {
+        button.addEventListener('mouseover', function() {
+            if (!this.disabled) {
+                this.style.transform = 'translateY(-2px)';
+            }
         });
-    </script>
+
+        button.addEventListener('mouseout', function() {
+            if (!this.disabled) {
+                this.style.transform = 'translateY(0)';
+            }
+        });
+    });
+</script>
+
+
     <script>
         let html5QrcodeScanner = null;
 
