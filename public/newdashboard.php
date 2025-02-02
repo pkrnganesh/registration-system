@@ -595,40 +595,59 @@ $registrationOpen = $currentDate < $deadlineDate;
 
         <!-- Table for events to register before the fest -->
         <h5>Events to Register Before FEB 10th 2025</h5>
-        <table class="events-table">
-            <thead>
-                <tr>
-                    <th>Event Name</th>
-                    <th>Required Credits</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($filteredEvents as $eventName => $eventDetails): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($eventName); ?></td>
-                        <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
-                        <td>
-                            <?php if (in_array($eventName, array_column($registeredEvents, 'eventName'))): ?>
-                                <span class="status-registered">Registered</span>
-                            <?php else: ?>
-                                <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <form method="POST" action="" style="display: inline;">
-                                <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
-                                <button type="submit" class="btn-register"
-                                    <?php echo (!$registrationOpen || in_array($eventName, array_column($registeredEvents, 'eventName')) || $user_data['credits'] < $eventDetails['credits']) ? 'disabled' : ''; ?>>
-                                    <?php echo in_array($eventName, array_column($registeredEvents, 'eventName')) ? 'Registered' : ($registrationOpen ? 'Register' : 'Registrations Closed'); ?>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+<table class="events-table">
+    <thead>
+        <tr>
+            <th>Event Name</th>
+            <th>Required Credits</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($filteredEvents as $eventName => $eventDetails): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($eventName); ?></td>
+                <td><?php echo htmlspecialchars($eventDetails['credits']); ?></td>
+                <td>
+                    <?php if (in_array($eventName, array_column($registeredEvents, 'eventName'))): ?>
+                        <span class="status-registered">Registered</span>
+                    <?php else: ?>
+                        <?php echo ($user_data['credits'] >= $eventDetails['credits']) ? 'Available' : 'Insufficient Credits'; ?>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <form method="POST" action="" style="display: inline;">
+                        <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($eventName); ?>">
+                        <?php
+                        $isRegistered = in_array($eventName, array_column($registeredEvents, 'eventName'));
+                        $hasEnoughCredits = $user_data['credits'] >= $eventDetails['credits'];
+                        $buttonText = '';
+                        $isDisabled = false;
+
+                        if ($isRegistered) {
+                            $buttonText = 'Registered';
+                            $isDisabled = true;
+                        } else if (!$registrationOpen) {
+                            $buttonText = 'Registrations Closed';
+                            $isDisabled = true;
+                        } else if (!$hasEnoughCredits) {
+                            $buttonText = 'Register';
+                            $isDisabled = true;
+                        } else {
+                            $buttonText = 'Register';
+                            $isDisabled = false;
+                        }
+                        ?>
+                        <button type="submit" class="btn-register" <?php echo $isDisabled ? 'disabled' : ''; ?>>
+                            <?php echo $buttonText; ?>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
         <!-- Table for all registered events -->
         <h3>All Registered Events</h3>
@@ -745,34 +764,49 @@ $registrationOpen = $currentDate < $deadlineDate;
 
                     // Update events table
                     if (data.events) {
-                        const eventsTableBody = document.querySelector('.events-table tbody');
-                        if (eventsTableBody) {
-                            eventsTableBody.innerHTML = '';
-                            data.events.forEach(event => {
-                                const row = document.createElement('tr');
-                                const buttonText = event.disabled || !data.registrationOpen ? 'Registrations Closed' :
-                                                   (event.status === 'Registered' ? 'Registered' : 'Register');
-                                row.innerHTML = `
-                                    <td>${event.eventName}</td>
-                                    <td>${event.credits}</td>
-                                    <td>${event.status}</td>
-                                    <td>
-                                        <form method="POST" action="" style="display: inline;">
-                                            <input type="hidden" name="eventName" value="${event.eventName}">
-                                            <button type="submit" class="btn-register" ${event.disabled || !data.registrationOpen ? 'disabled' : ''}>
-                                                ${buttonText}
-                                            </button>
-                                        </form>
-                                    </td>
-                                `;
-                                eventsTableBody.appendChild(row);
-                            });
-                        }
+                    const eventsTableBody = document.querySelector('.events-table tbody');
+                    if (eventsTableBody) {
+                        eventsTableBody.innerHTML = '';
+                        data.events.forEach(event => {
+                            const row = document.createElement('tr');
+                            let buttonText = '';
+                            let isDisabled = false;
+
+                            if (event.status === 'Registered') {
+                                buttonText = 'Registered';
+                                isDisabled = true;
+                            } else if (!data.registrationOpen) {
+                                buttonText = 'Registrations Closed';
+                                isDisabled = true;
+                            } else if (event.status === 'Insufficient Credits') {
+                                buttonText = 'Register';
+                                isDisabled = true;
+                            } else {
+                                buttonText = 'Register';
+                                isDisabled = false;
+                            }
+
+                            row.innerHTML = `
+                                <td>${event.eventName}</td>
+                                <td>${event.credits}</td>
+                                <td>${event.status}</td>
+                                <td>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="eventName" value="${event.eventName}">
+                                        <button type="submit" class="btn-register" ${isDisabled ? 'disabled' : ''}>
+                                            ${buttonText}
+                                        </button>
+                                    </form>
+                                </td>
+                            `;
+                            eventsTableBody.appendChild(row);
+                        });
                     }
                 }
-            })
-            .catch(error => console.error('Error fetching user data:', error));
-    }
+            }
+        })
+        .catch(error => console.error('Error fetching user data:', error));
+}
 
     // Update data every 5 seconds
     setInterval(fetchUserData, 5000);
