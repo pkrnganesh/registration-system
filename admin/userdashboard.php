@@ -54,6 +54,48 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registerEvent'])) {
+    $eventName = $_POST['eventName'];
+    $credits = intval($_POST['credits']);
+    $playerId = $playerDetails['regNo'];
+
+    if ($playerDetails['credits'] >= $credits) {
+        $conn->begin_transaction();
+
+        try {
+            // Update player credits
+            $updateCredits = $conn->prepare("UPDATE players SET credits = credits - ? WHERE regNo = ?");
+            $updateCredits->bind_param("is", $credits, $playerId);
+            $updateCredits->execute();
+
+            // Insert event with correct number of parameters
+            $insertEvent = $conn->prepare("INSERT INTO events (eventName, credits, playerRegno) VALUES (?, ?, ?)");
+            $insertEvent->bind_param("sis", $eventName, $credits, $playerId);
+            $insertEvent->execute();
+
+            if (isset($_SESSION['user_data']) && $_SESSION['user_data']['regNo'] == $playerId) {
+                $_SESSION['user_data']['credits'] -= $credits;
+            }
+
+            $conn->commit();
+            $_SESSION['success_message'] = "Successfully registered for {$eventName}! Credits deducted.";
+
+            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+            exit();
+        } catch (Exception $e) {
+            $conn->rollback();
+            $_SESSION['error_message'] = "Error registering for event: " . $e->getMessage();
+            header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+            exit();
+        }
+    } else {
+        $_SESSION['error_message'] = "Insufficient credits to register for this event!";
+        header("Location: " . $_SERVER['PHP_SELF'] . "?" . $uniqueId);
+        exit();
+    }
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['addCredits'])) {
     $additionalCredits = intval($_POST['additionalCredits']);
     $playerId = $playerDetails['regNo'];
@@ -179,6 +221,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
         exit();
     }
 }
+$events = [
+    'Squid' => 150,
+    'Code Fighters' => 100,
+    'Red Light Green Light' => 120,
+    'Gongi' => 50,
+    'Dalgona Cookie' => 10,
+    'Dadkji' => 500,
+    'Temple Run' => 500,
+    'Code Master' => 500,
+    'Spell Casters' => 500,
+    'KBC' => 500,
+    'Ideathon' => 500,
+    'Online Housie' => 500,
+    'Clash Battle' => 500
+];
+
 ?>
 
 <!DOCTYPE html>
@@ -198,25 +256,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             padding: 20px;
             min-height: 100vh;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
         }
+
         .profile-section {
             background: linear-gradient(145deg, #1a1a1a, #333);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             position: relative;
         }
+
         .profile-header {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .profile-avatar {
             width: 60px;
             height: 60px;
@@ -231,78 +293,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             cursor: pointer;
             transition: transform 0.3s;
         }
+
         .profile-avatar:hover {
             transform: scale(1.05);
         }
+
         .profile-name {
             flex-grow: 1;
         }
+
         .profile-name h2 {
             margin: 0;
             font-size: 24px;
             color: #fff;
         }
+
         .profile-name p {
             margin: 5px 0 0;
             color: #888;
             font-size: 14px;
         }
+
         .profile-info {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .info-item {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 15px;
             border-radius: 8px;
         }
+
         .info-item label {
             display: block;
             color: #888;
             font-size: 12px;
             margin-bottom: 5px;
         }
+
         .info-item span {
             color: #fff;
             font-size: 16px;
             font-weight: 500;
         }
+
         .credit-display {
-            background: linear-gradient(45deg, #ff4b2b,rgb(2, 2, 2));
+            background: linear-gradient(45deg, #ff4b2b, rgb(2, 2, 2));
             padding: 20px;
             border-radius: 10px;
             text-align: center;
             margin-top: 20px;
         }
+
         .credit-display .number {
             font-size: 36px;
             font-weight: bold;
             color: white;
         }
+
         .events-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
         }
-        .events-table th, .events-table td {
+
+        .events-table th,
+        .events-table td {
             padding: 15px;
             text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .events-table th {
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             font-weight: 500;
             text-transform: uppercase;
             font-size: 14px;
         }
+
         .events-table tbody tr:hover {
-            background-color: rgba(255,255,255,0.05);
+            background-color: rgba(255, 255, 255, 0.05);
         }
+
         .btn-register {
             padding: 8px 16px;
             background: linear-gradient(45deg, #4CAF50, #45a049);
@@ -313,17 +391,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             font-weight: 500;
             transition: transform 0.2s;
         }
+
         .btn-register:hover:not(:disabled) {
             transform: translateY(-2px);
         }
+
         .btn-register:disabled {
             background: #666;
             cursor: not-allowed;
         }
+
         .status-registered {
             color: #4CAF50;
             font-weight: 500;
         }
+
         .qr-popup {
             display: none;
             position: fixed;
@@ -333,10 +415,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             background: #1a1a1a;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             z-index: 1000;
             text-align: center;
         }
+
         .qr-popup img {
             margin: 15px 0;
             padding: 15px;
@@ -344,6 +427,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             border-radius: 10px;
             max-width: 200px;
         }
+
         .logout-btn {
             background: #ff416c;
             color: white;
@@ -355,11 +439,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             font-weight: 500;
             transition: background 0.3s;
         }
+
         .logout-btn:hover {
             background: #ff4b2b;
         }
-       /* Update the base popup styles */
-       .popup {
+
+        /* Update the base popup styles */
+        .popup {
             visibility: hidden;
             position: fixed;
             bottom: 30px;
@@ -424,24 +510,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             body {
                 padding: 10px;
             }
+
             .profile-info {
                 grid-template-columns: 1fr;
             }
+
             .profile-name h2 {
                 font-size: 20px;
             }
+
             .credit-display .number {
                 font-size: 28px;
             }
 
             /* Updated table styles for mobile */
             .events-table {
-                font-size: 12px; /* Reduced base font size */
+                font-size: 12px;
+                /* Reduced base font size */
             }
 
             .events-table th,
             .events-table td {
-                padding: 8px 6px; /* Reduced padding */
+                padding: 8px 6px;
+                /* Reduced padding */
                 font-size: 12px;
                 text-align: center;
             }
@@ -485,6 +576,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
 
         /* Add styles for extra small screens */
         @media (max-width: 360px) {
+
             .events-table th,
             .events-table td {
                 padding: 6px 4px;
@@ -605,6 +697,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
             <?php else: ?>
                 <p>No registered events found for this player.</p>
             <?php endif; ?>
+
+            <!-- All Events Table -->
+        <!-- All Events Table -->
+<h3>All Available Events</h3>
+<div class="events-table-container">
+    <table class="events-table">
+        <thead>
+            <tr>
+                <th>Event name</th>
+                <th>Credits</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            // Create an array of registered event names for easy checking
+            $registeredEventNames = array_map(function($event) {
+                return $event['eventName'];
+            }, $registeredEvents);
+            
+            foreach ($events as $eventName => $credits): 
+                $isRegistered = in_array($eventName, $registeredEventNames);
+            ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($eventName); ?></td>
+                    <td><?php echo htmlspecialchars($credits); ?></td>
+                    <td>
+                        <?php if ($isRegistered): ?>
+                            <button type="submit" class="btn-register" disabled>Registered</button>
+                        <?php else: ?>
+                            <form method="POST" action="" style="display: inline;">
+                                <input type="hidden" name="eventName" value="<?php echo $eventName; ?>">
+                                <input type="hidden" name="credits" value="<?php echo $credits; ?>">
+                                <button type="submit" name="registerEvent" class="btn-register">Register</button>
+                            </form>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
         <?php endif; ?>
 
         <!-- Back Button -->
