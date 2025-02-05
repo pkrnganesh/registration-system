@@ -40,6 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Not enough credits to replay this event!";
         }
+    } elseif (isset($_POST['deletePlayer'])) {
+        $regNo = $_POST['regNo'];
+        $eventName = $_POST['eventName'];
+        deletePlayerEvent($conn, $eventName, $regNo);
+        $success = "Player entry deleted successfully!";
+        $players = $selectedEvent ? getPlayersByEvent($conn, $selectedEvent) : getAllPlayers($conn);
     }
 }
 
@@ -147,14 +153,48 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
 
 function getPlayersByEvent($conn, $eventName) {
     $stmt = $conn->prepare("
-        SELECT DISTINCT p.*, e.played, e.ever_played, e.play_count 
-        FROM players p 
-        JOIN events e ON p.regNo = e.playerRegno 
+        SELECT DISTINCT p.*, e.played, e.ever_played, e.play_count
+        FROM players p
+        JOIN events e ON p.regNo = e.playerRegno
         WHERE e.eventName = ?
     ");
     $stmt->bind_param("s", $eventName);
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+function deletePlayerEvent($conn, $eventName, $regNo)
+{
+    $stmt = $conn->prepare("DELETE FROM events WHERE eventName = ? AND playerRegno = ?");
+    $stmt->bind_param("ss", $eventName, $regNo);
+    $stmt->execute();
+}
+
+function exportPlayersToCSV($players, $eventName)
+{
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="players.csv"');
+
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Name', 'Email', 'Registration Number', 'Event Name', 'Total Credits', 'Played']);
+
+    foreach ($players as $player) {
+        fputcsv($output, [
+            $player['name'],
+            $player['email'],
+            $player['regNo'],
+            $eventName,
+            $player['credits'],
+            $player['played'] ? 'Yes' : 'No'
+        ]);
+    }
+
+    fclose($output);
+    exit();
+}
+
+if (isset($_GET['export'])) {
+    exportPlayersToCSV($players, $selectedEvent);
 }
 ?>
 
@@ -261,6 +301,20 @@ function getPlayersByEvent($conn, $eventName) {
         .event-column {
             min-width: 200px;
         }
+
+        .btn-delete {
+            background-color: #f44336;
+        }
+
+        .btn-export {
+            background-color: #4CAF50;
+            margin-left: 10px;
+        }
+
+        .btn-export:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -272,12 +326,17 @@ function getPlayersByEvent($conn, $eventName) {
         <select id="eventFilter" onchange="filterByEvent(this.value)">
             <option value="">Select Event</option>
             <?php foreach ($events as $eventName): ?>
-                <option value="<?php echo htmlspecialchars($eventName); ?>" 
+                <option value="<?php echo htmlspecialchars($eventName); ?>"
                     <?php echo $selectedEvent === $eventName ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($eventName); ?>
                 </option>
             <?php endforeach; ?>
         </select>
+        <?php if ($selectedEvent && !empty($players)): ?>
+            <button class="btn btn-export" onclick="exportPlayers()">Export</button>
+        <?php else: ?>
+            <button class="btn btn-export" disabled>Export</button>
+        <?php endif; ?>
     </div>
 
     <table class="players-table" id="playersTable">
@@ -293,6 +352,7 @@ function getPlayersByEvent($conn, $eventName) {
                 <?php if ($selectedEvent): ?>
                     <th><?php echo htmlspecialchars($selectedEvent); ?></th>
                 <?php endif; ?>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -334,6 +394,15 @@ function getPlayersByEvent($conn, $eventName) {
                             <?php endif; ?>
                         </td>
                     <?php endif; ?>
+                    <td>
+                        <?php if ($selectedEvent): ?>
+                            <form method="POST" action="" style="display: inline;">
+                                <input type="hidden" name="regNo" value="<?php echo htmlspecialchars($player['regNo']); ?>">
+                                <input type="hidden" name="eventName" value="<?php echo htmlspecialchars($selectedEvent); ?>">
+                                <button type="submit" name="deletePlayer" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this entry?');">Delete</button>
+                            </form>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
         </tbody>
@@ -373,6 +442,10 @@ function getPlayersByEvent($conn, $eventName) {
             } else {
                 window.location.href = '?';
             }
+        }
+
+        function exportPlayers() {
+            window.location.href = `?export=1&event=${encodeURIComponent('<?php echo $selectedEvent; ?>')}`;
         }
 
         window.onload = function() {
