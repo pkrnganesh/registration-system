@@ -222,19 +222,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eventId'])) {
     }
 }
 $events = [
-    'Squid' => 150,
-    'Code Fighters' => 100,
-    'Red Light Green Light' => 120,
-    'Gongi' => 50,
-    'Dalgona Cookie' => 10,
-    'Dadkji' => 500,
-    'Temple Run' => 500,
-    'Code Master' => 500,
-    'Spell Casters' => 500,
-    'KBC' => 500,
-    'Ideathon' => 500,
-    'Online Housie' => 500,
-    'Clash Battle' => 500
+    'Free Fire' => 160,
+    'Gonggi' => 10,
+    '30 Tiles' => 20,
+    'Puck Board Sling' => 30,
+    'Dalgona Cookie Game' => 30,
+    'Squid Hunt' => 50,
+    'Red Light Green Light' => 30,
+    'Code Masters' => 30,
+    'Spell Bee' => 30,
+    'Ideathon' => 10,
+    'Online Housie' => 30,
+    'Code Fighters' => 30,
 ];
 
 ?>

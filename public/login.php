@@ -4,7 +4,7 @@ include '../includes/db.php';
 
 if (isset($_POST['email']) && isset($_POST['regNo'])) {
     $email = $_POST['email'];
-    $regNo = $_POST['regNo'];
+    $regNo = strtoupper($_POST['regNo']);
 
     $query = "SELECT * FROM players WHERE email = ?";
     $stmt = $conn->prepare($query);
@@ -14,7 +14,7 @@ if (isset($_POST['email']) && isset($_POST['regNo'])) {
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-        if ($user['regNo'] == $regNo) {
+        if (strtoupper($user['regNo']) == $regNo) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_data'] = $user;
             echo json_encode(['success' => true, 'message' => "Login successful!"]);

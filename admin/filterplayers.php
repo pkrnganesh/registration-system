@@ -67,7 +67,20 @@ if (!isset($_SESSION['admin_id'])) {
         <select name="eventName" id="eventName">
             <option value="">All Events</option>
             <?php
-            $events = ['Free Fire', 'Squid', 'Game1', 'Game2', 'Game3', 'Game4', 'Game5'];
+            $events =  [
+                'Free Fire',
+                'Gonggi',
+                '30 Tiles',
+                'Puck Board Sling',
+                'Dalgona Cookie Game',
+                'Squid Hunt',
+                'Red Light Green Light',
+                'Code Masters',
+                'Spell Bee',
+                'Ideathon',
+                'Online Housie',
+                'Code Fighters'
+            ] ;
             foreach ($events as $event) {
                 echo "<option value='$event'>$event</option>";
             }
@@ -96,7 +109,7 @@ if (!isset($_SESSION['admin_id'])) {
         $phoneNumber = $_POST['phoneNumber'];
         $uniqueId = $_POST['uniqueId'];
 
-        $query = "SELECT p.name, p.email, p.regNo, p.branch, p.year, p.credits, p.eventsPlayed, p.uniqueId, e.eventName, e.credits AS eventCredits, e.played, e.play_count
+        $query = "SELECT p.name, p.email, p.regNo, p.branch, p.year, p.credits, p.eventsPlayed, p.uniqueId, p.phoneNumber, e.eventName, e.credits AS eventCredits, e.played, e.play_count
                   FROM players p
                   LEFT JOIN events e ON p.regNo = e.playerRegno";
 
@@ -151,6 +164,7 @@ if (!isset($_SESSION['admin_id'])) {
                             <th>Credits</th>
                             <th>Events Played</th>
                             <th>Unique ID</th>
+                            <th>Phone Number</th>
                             <th>Event Name</th>
                             <th>Event Credits</th>
                             <th>Played</th>
@@ -168,6 +182,7 @@ if (!isset($_SESSION['admin_id'])) {
                         <td>" . htmlspecialchars($row['credits']) . "</td>
                         <td>" . htmlspecialchars($row['eventsPlayed']) . "</td>
                         <td>" . htmlspecialchars($row['uniqueId']) . "</td>
+                        <td>" . htmlspecialchars($row['phoneNumber']) . "</td>
                         <td>" . htmlspecialchars($row['eventName']) . "</td>
                         <td>" . htmlspecialchars($row['eventCredits']) . "</td>
                         <td>" . ($row['played'] ? 'Yes' : 'No') . "</td>

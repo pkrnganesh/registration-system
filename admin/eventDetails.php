@@ -11,7 +11,20 @@ $error = '';
 $success = '';
 
 $players = getAllPlayers($conn);
-$events = ['Squid', 'Code Fighters', 'Red Light Green Light', 'Gongi', 'Dalgona Cookie', 'Dadkji', 'Temple Run', 'Code Master', 'Spell Casters', 'KBC', 'Ideathon', 'Online Housie', 'Clash Battle'];
+$events = [
+    'Free Fire', 
+    'Gonggi', 
+    '30 Tiles', 
+    'Puck Board Sling', 
+    'Dalgona Cookie Game', 
+    'Squid Hunt', 
+    'Red Light Green Light', 
+    'Code Masters', 
+    'Spell Bee', 
+    'Ideathon', 
+    'Online Housie',
+    'Code Fighters'
+];
 $selectedEvent = isset($_GET['event']) ? $_GET['event'] : '';
 $players = $selectedEvent ? getPlayersByEvent($conn, $selectedEvent) : getAllPlayers($conn);
 
@@ -90,19 +103,18 @@ function playEvent($conn, $eventName, $regNo)
 function getEventCredits($eventName)
 {
     $events = [
-        'Squid' => 150,
-        'Code Fighters' => 100,
-        'Red Light Green Light' => 120,
-        'Gongi' => 50,
-        'Dalgona Cookie' => 10,
-        'Dadkji' => 500,
-        'Temple Run' => 500,
-        'Code Master' => 500,
-        'Spell Casters' => 500,
-        'KBC' => 500,
-        'Ideathon' => 500,
-        'Online Housie' => 500,
-        'Clash Battle' => 500
+        'Free Fire' => 160,
+        'Gonggi' => 10,
+        '30 Tiles' => 20,
+        'Puck Board Sling' => 30,
+        'Dalgona Cookie Game' => 30,
+        'Squid Hunt' => 50,
+        'Red Light Green Light' => 30,
+        'Code Masters' => 30,
+        'Spell Bee' => 30,
+        'Ideathon' => 10,
+        'Online Housie' => 30,
+        'Code Fighters' => 30
     ];
     return $events[$eventName];
 }

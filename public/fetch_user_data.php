@@ -22,8 +22,7 @@ $_SESSION['user_data'] = $user_data;
 $registeredEvents = getRegisteredEvents($conn, $regNo);
 
 $events = [
-    'Free Fire' => ['credits' => 100, 'description' => 'Battle Royale Game'],
-    'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge']
+    'Free Fire' => ['credits' => 160, 'description' => 'Battle Royale Game']
 ];
 
 $eventsData = [];

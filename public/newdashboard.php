@@ -23,20 +23,18 @@ $regNo = $user_data['regNo'];
 $registeredEvents = getRegisteredEvents($conn, $regNo);
 
 $events = [
-    'Free Fire' => ['credits' => 100, 'description' => 'Battle Royale Game'],
-    'Squid' => ['credits' => 150, 'description' => 'Survival Game Challenge'],
-    'Code Fighters' => ['credits' => 150, 'description' => 'Coding Competition'],
-    'Red Light Green Light' => ['credits' => 120, 'description' => 'Classic Game'],
-    'Gongi' => ['credits' => 50, 'description' => 'Traditional Game'],
-    'Dalgona Cookie' => ['credits' => 10, 'description' => 'Cookie Challenge'],
-    'Dadkji' => ['credits' => 500, 'description' => 'Traditional Game'],
-    'Temple Run' => ['credits' => 500, 'description' => 'Running Game'],
-    'Code Master' => ['credits' => 500, 'description' => 'Coding Competition'],
-    'Spell Casters' => ['credits' => 500, 'description' => 'Spelling Bee'],
-    'KBC' => ['credits' => 500, 'description' => 'Quiz Show'],
-    'Ideathon' => ['credits' => 500, 'description' => 'Idea Pitching'],
-    'Online Housie' => ['credits' => 500, 'description' => 'Bingo Game'],
-    'Clash Battle' => ['credits' => 500, 'description' => 'Battle Royale Game']
+    'Free Fire' => ['credits' => 160, 'description' => 'Battle Royale Game'],
+    'Gonggi' => ['credits' => 10, 'description' => 'Traditional Game'],
+    '30 Tiles' => ['credits' => 20, 'description' => 'Tile Game'],
+    'Puck Board Sling' => ['credits' => 30, 'description' => 'Board Game'],
+    'Dalgona Cookie Game' => ['credits' => 30, 'description' => 'Cookie Challenge'],
+    'Squid Hunt' => ['credits' => 50, 'description' => 'Hunting Game'],
+    'Red Light Green Light' => ['credits' => 30, 'description' => 'Classic Game'],
+    'Code Masters' => ['credits' => 30, 'description' => 'Coding Competition'],
+    'Spell Bee' => ['credits' => 30, 'description' => 'Spelling Bee'],
+    'Ideathon' => ['credits' => 10, 'description' => 'Idea Pitching'],
+    'Online Housie' => ['credits' => 30, 'description' => 'Bingo Game'],
+    'Code Fighters' => ['credits' => 30, 'description' => 'Coding Competition'],
 ];
 
 // Filter the events to include only 'Free Fire' and 'Squid' for display
@@ -701,7 +699,7 @@ $registrationOpen = $currentDate < $deadlineDate;
 
     <script>
     const uniqueId = "<?php echo $user_data['uniqueId']; ?>";
-    const playerDashboardUrl = `http://localhost/registration-system/admin/userdashboard.php?${uniqueId}`;
+    const playerDashboardUrl = `https://srkrec.edu.in/sigma/registration/admin/userdashboard.php?${uniqueId}`;
 
     // Generate QR Code
     QRCode.toDataURL(playerDashboardUrl, {

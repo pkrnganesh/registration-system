@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_id'])) {
 $error = '';
 $success = '';
 
-$players = getAllPlayers($conn);
+list($players, $playerCount) = getAllPlayers($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['addCredits'])) {
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $creditsToAdd = $_POST['creditsToAdd'];
         addCredits($conn, $regNo, $creditsToAdd);
         $success = "Credits added successfully!";
-        $players = getAllPlayers($conn);
+        list($players, $playerCount) = getAllPlayers($conn);
     } elseif (isset($_POST['registerEvent'])) {
         $regNo = $_POST['regNo'];
         $eventName = $_POST['eventName'];
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             registerForEvent($conn, $eventName, $regNo, $eventCredits);
             deductCreditsForEvent($conn, $eventName, $regNo);
             $success = "Registered for event successfully!";
-            $players = getAllPlayers($conn);
+            list($players, $playerCount) = getAllPlayers($conn);
         } else {
             $error = "Not enough credits to register for this event!";
         }
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventName = $_POST['eventName'];
         playEvent($conn, $eventName, $regNo);
         $success = "Event played successfully!";
-        $players = getAllPlayers($conn);
+        list($players, $playerCount) = getAllPlayers($conn);
     }
 }
 
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             replayEvent($conn, $eventName, $regNo, $eventCredits);
             $success = "Event set for replay successfully!";
             // Refresh player data
-            $players = getAllPlayers($conn);
+            list($players, $playerCount) = getAllPlayers($conn);
         } else {
             $error = "Not enough credits to replay this event!";
         }
@@ -63,7 +63,10 @@ function getAllPlayers($conn)
 {
     $stmt = $conn->prepare("SELECT * FROM players");
     $stmt->execute();
-    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $result = $stmt->get_result();
+    $players = $result->fetch_all(MYSQLI_ASSOC);
+    $playerCount = $result->num_rows;
+    return [$players, $playerCount];
 }
 
 function getPlayerCredits($conn, $regNo)
@@ -100,19 +103,18 @@ function playEvent($conn, $eventName, $regNo)
 function getEventCredits($eventName)
 {
     $events = [
-        'Squid' => 150,
-        'Code Fighters' => 100,
-        'Red Light Green Light' => 120,
-        'Gongi' => 50,
-        'Dalgona Cookie' => 10,
-        'Dadkji' => 500,
-        'Temple Run' => 500,
-        'Code Master' => 500,
-        'Spell Casters' => 500,
-        'KBC' => 500,
-        'Ideathon' => 500,
-        'Online Housie' => 500,
-        'Clash Battle' => 500
+        'Free Fire' => 160,
+        'Gonggi' => 10,
+        '30 Tiles' => 20,
+        'Puck Board Sling' => 30,
+        'Dalgona Cookie Game' => 30,
+        'Squid Hunt' => 50,
+        'Red Light Green Light' => 30,
+        'Code Masters' => 30,
+        'Spell Bee' => 30,
+        'Ideathon' => 10,
+        'Online Housie' => 30,
+        'Code Fighters' => 30
     ];
     return $events[$eventName];
 }
@@ -160,7 +162,69 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
     }
 }
 ?>
+<?php
+// Add this function at the bottom of your existing PHP functions
+function exportPlayersToCSV($conn) {
+    // Get all players and their event status
+    $players = getAllPlayers($conn)[0];
+    
+    // Open output stream
+    $output = fopen('php://output', 'w');
+    
+    // Set headers for CSV download
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="players_export_' . date('Y-m-d') . '.csv"');
+    
+    // Add CSV headers
+    $headers = ['Name', 'Email', 'Registration Number', 'Branch', 'Year', 'Credits'];
+    
+    // Add event names to headers
+    $events = [
+        'Free Fire', 'Gonggi', '30 Tiles', 'Puck Board Sling', 
+        'Dalgona Cookie Game', 'Squid Hunt', 'Red Light Green Light',
+        'Code Masters', 'Spell Bee', 'Ideathon', 'Online Housie', 
+        'Code Fighters'
+    ];
+    
+    $headers = array_merge($headers, $events);
+    fputcsv($output, $headers);
+    
+    // Add data for each player
+    foreach ($players as $player) {
+        $eventStatus = getPlayerEventStatus($conn, $player['regNo']);
+        $row = [
+            $player['name'],
+            $player['email'],
+            $player['regNo'],
+            $player['branch'],
+            $player['year'],
+            $player['credits']
+        ];
+        
+        // Add event status for each event
+        foreach ($events as $event) {
+            if (isset($eventStatus[$event])) {
+                $status = $eventStatus[$event]['played'] ? 
+                    'Played (' . $eventStatus[$event]['play_count'] . ')' : 
+                    'Registered';
+            } else {
+                $status = 'Not Registered';
+            }
+            $row[] = $status;
+        }
+        
+        fputcsv($output, $row);
+    }
+    
+    fclose($output);
+    exit();
+}
 
+// Add this at the beginning of your PHP script, after checking for POST requests
+if (isset($_POST['exportPlayers'])) {
+    exportPlayersToCSV($conn);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -271,7 +335,13 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
 </head>
 
 <body>
+<form method="POST" action="" style="margin-bottom: 20px;">
+    <button type="submit" name="exportPlayers" class="btn btn-register">
+        Export Players Data
+    </button>
+</form>
     <h1>Admin Dashboard</h1>
+    <p>Total Players: <?php echo $playerCount; ?></p>
 
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Search by Registration Number" onkeyup="filterPlayers()">
@@ -286,7 +356,22 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                 <th>Year</th>
                 <th>Credits</th>
                 <th>Add Credits</th>
-                <?php foreach (['Squid Hunt', 'Code Fighters', 'Red Light Green Light', 'Gongi', 'Dalgona Cookie', 'Dadkji', 'Temple Run', 'Code Master', 'Spell Casters', 'KBC', 'Ideathon', 'Online Housie', 'Clash Battle'] as $eventName): ?>
+                <?php foreach (
+                    [
+                        'Free Fire',
+                        'Gonggi',
+                        '30 Tiles',
+                        'Puck Board Sling',
+                        'Dalgona Cookie Game',
+                        'Squid Hunt',
+                        'Red Light Green Light',
+                        'Code Masters',
+                        'Spell Bee',
+                        'Ideathon',
+                        'Online Housie',
+                        'Code Fighters'
+                    ] as $eventName
+                ): ?>
                     <th class="event-column"><?php echo htmlspecialchars($eventName); ?></th>
                 <?php endforeach; ?>
             </tr>
@@ -309,7 +394,22 @@ function replayEvent($conn, $eventName, $regNo, $eventCredits)
                             <button type="submit" name="addCredits" class="btn btn-register">Add</button>
                         </form>
                     </td>
-                    <?php foreach (['Squid', 'Code Fighters', 'Red Light Green Light', 'Gongi', 'Dalgona Cookie', 'Dadkji', 'Temple Run', 'Code Master', 'Spell Casters', 'KBC', 'Ideathon', 'Online Housie', 'Clash Battle'] as $eventName): ?>
+                    <?php foreach (
+                        [
+                            'Free Fire',
+                            'Gonggi',
+                            '30 Tiles',
+                            'Puck Board Sling',
+                            'Dalgona Cookie Game',
+                            'Squid Hunt',
+                            'Red Light Green Light',
+                            'Code Masters',
+                            'Spell Bee',
+                            'Ideathon',
+                            'Online Housie',
+                            'Code Fighters'
+                        ] as $eventName
+                    ): ?>
                         <td class="event-column">
                             <?php if (!isset($eventStatus[$eventName])): ?>
                                 <form method="POST" action="" style="display: inline;">

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,18 +33,20 @@
             margin-bottom: 15px;
         }
 
-        input, select {
+        input,
+        select {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
-            background-color:rgb(46, 42, 42);
+            background-color: rgb(46, 42, 42);
             border: none;
             border-radius: 8px;
             color: white;
             font-size: 16px;
         }
 
-        input::placeholder, select::placeholder {
+        input::placeholder,
+        select::placeholder {
             color: #666;
         }
 
@@ -52,12 +55,13 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11l-7-7h14l-7 7z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 15px center;
+            width: 425px
         }
 
         button {
-            width: 100%;
+            width: 425px;
             padding: 15px;
-            background-color: #cc0000;
+            background-color: #ff007f;
             border: none;
             border-radius: 8px;
             color: white;
@@ -67,7 +71,7 @@
         }
 
         button:hover {
-            background-color: #aa0000;
+            background-color: #ff007f;
         }
 
         .popup {
@@ -84,7 +88,7 @@
         }
 
         .popup.error {
-            background-color: #cc0000;
+            background-color: #ff007f;
         }
 
         .popup.show {
@@ -95,7 +99,7 @@
             display: block;
             text-align: center;
             margin-top: 20px;
-            color: #cc0000;
+            color: #ff007f;
             text-decoration: none;
             font-size: 16px;
         }
@@ -109,14 +113,21 @@
                 padding: 10px;
             }
 
-            input, select, button {
+            input,
+            select,
+            button {
                 font-size: 14px;
+                width: 100%;
+                padding: 10px;
+                box-sizing: border-box;
             }
+
         }
     </style>
 </head>
+
 <body>
-    <h2>Register for SIGMA2K25</h2>
+    <h2>Register for SIGMA<span style="color: #ff007f">2K25 </span></h2>
     <?php
     session_start();
     include '../includes/db.php';
@@ -189,13 +200,19 @@
         <div class="form-group">
             <select id="branch" name="branch" required>
                 <option value="">Select Branch</option>
-                <option value="CSD" <?php echo ($branch === 'CSD') ? 'selected' : ''; ?>>CSD</option>
-                <option value="CSE" <?php echo ($branch === 'CSE') ? 'selected' : ''; ?>>CSE</option>
-                <option value="IT" <?php echo ($branch === 'IT') ? 'selected' : ''; ?>>IT</option>
                 <option value="ECE" <?php echo ($branch === 'ECE') ? 'selected' : ''; ?>>ECE</option>
                 <option value="EEE" <?php echo ($branch === 'EEE') ? 'selected' : ''; ?>>EEE</option>
                 <option value="MECH" <?php echo ($branch === 'MECH') ? 'selected' : ''; ?>>MECH</option>
                 <option value="CIVIL" <?php echo ($branch === 'CIVIL') ? 'selected' : ''; ?>>CIVIL</option>
+                <option value="AIML" <?php echo ($branch === 'AIML') ? 'selected' : ''; ?>>AIML</option>
+                <option value="AIDS" <?php echo ($branch === 'AIDS') ? 'selected' : ''; ?>>AIDS</option>
+                <option value="CSBS" <?php echo ($branch === 'CSBS') ? 'selected' : ''; ?>>CSBS</option>
+                <option value="CIC" <?php echo ($branch === 'CIC') ? 'selected' : ''; ?>>CIC</option>
+                <option value="CSE" <?php echo ($branch === 'CSE') ? 'selected' : ''; ?>>CSE</option>
+                <option value="IT" <?php echo ($branch === 'IT') ? 'selected' : ''; ?>>IT</option>
+                <option value="CSD" <?php echo ($branch === 'CSD') ? 'selected' : ''; ?>>CSD</option>
+                <option value="CSIT" <?php echo ($branch === 'CSIT') ? 'selected' : ''; ?>>CSIT</option>
+
             </select>
         </div>
 
@@ -271,4 +288,5 @@
         });
     </script>
 </body>
+
 </html>
