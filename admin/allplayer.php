@@ -176,7 +176,7 @@ function exportPlayersToCSV($conn) {
     header('Content-Disposition: attachment; filename="players_export_' . date('Y-m-d') . '.csv"');
     
     // Add CSV headers
-    $headers = ['Name', 'Email', 'Registration Number', 'Branch', 'Year', 'Credits'];
+    $headers = ['Name', 'Email','Phone Number', 'Registration Number', 'Branch', 'Year', 'Credits'];
     
     // Add event names to headers
     $events = [
@@ -195,6 +195,7 @@ function exportPlayersToCSV($conn) {
         $row = [
             $player['name'],
             $player['email'],
+            $player['phoneNumber'],
             $player['regNo'],
             $player['branch'],
             $player['year'],
@@ -351,6 +352,7 @@ if (isset($_POST['exportPlayers'])) {
             <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Phone Number</th>
                 <th>Registration Number</th>
                 <th>Branch</th>
                 <th>Year</th>
@@ -383,6 +385,7 @@ if (isset($_POST['exportPlayers'])) {
                 <tr>
                     <td><?php echo htmlspecialchars($player['name']); ?></td>
                     <td><?php echo htmlspecialchars($player['email']); ?></td>
+                    <td><?php echo htmlspecialchars($player['phoneNumber']); ?></td>
                     <td><?php echo htmlspecialchars($player['regNo']); ?></td>
                     <td><?php echo htmlspecialchars($player['branch']); ?></td>
                     <td><?php echo htmlspecialchars($player['year']); ?></td>
